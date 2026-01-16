@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { 
   FolderLock, Search, UserPlus, FileText, CheckCircle2, 
@@ -93,10 +92,12 @@ const OnboardingPortal: React.FC<OnboardingProps> = ({ role, staff }) => {
     ];
 
     for (const base of onboardingTasks) {
+      // Fix: Add missing 'tasksForToday' property to comply with the Task interface
       const task: Task = {
         id: `auto-${Date.now()}-${Math.random()}`,
         sn: 0, // Storage service will need to handle SN properly in real app
         role: base.role!,
+        tasksForToday: base.smart?.specific || "Perform induction tasks.",
         responsibleParty: record.staffName,
         problem: { description: "New staff induction", rootCauseAndConsequences: "Lack of corporate alignment", risk: "Operational friction" },
         smart: base.smart as any,

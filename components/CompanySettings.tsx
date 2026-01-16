@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { Settings, Image as ImageIcon, Globe, MapPin, Phone, Mail, Save, UserPlus, Trash2, ShieldCheck, Loader2, Key, Download, Upload, Database, Settings2, Code, ChevronRight, Check, X, ShieldAlert, History } from 'lucide-react';
+import { Settings, Image as ImageIcon, Globe, MapPin, Phone, Mail, Save, UserPlus, Trash2, ShieldCheck, Loader2, Key, Download, Upload, Database, Settings2, Code, ChevronRight, Check, X, ShieldAlert, History, Cloud, CloudOff, RefreshCw, Zap, Briefcase, FileText } from 'lucide-react';
 import { UserAccount, UserRole, PasswordChangeRequest } from '../types';
 import { storageService } from '../services/storageService';
 import { STORES } from '../services/db';
@@ -36,12 +36,19 @@ const CompanySettings: React.FC<SettingsProps> = ({ role }) => {
   const [newPassword, setNewPassword] = useState('');
   const [isRequestingPw, setIsRequestingPw] = useState(false);
 
+  // Sync State
+  const [syncKey, setSyncKey] = useState('');
+  const [isSyncing, setIsSyncing] = useState(false);
+  const [lastSync, setLastSync] = useState<string>('');
+
   const [newUser, setNewUser] = useState({
     name: '',
     role: 'Staff' as UserRole,
+    position: '',
     department: 'OPERATIONS',
     username: '',
-    password: 'password123'
+    password: 'password123',
+    jobDescription: ''
   });
 
   const [company, setCompany] = useState({
@@ -58,7 +65,15 @@ const CompanySettings: React.FC<SettingsProps> = ({ role }) => {
     loadUsers();
     loadPwRequests();
     inspectDatabase();
+    loadSyncStatus();
   }, [inspectedStore]);
+
+  const loadSyncStatus = async () => {
+    const key = await storageService.getSyncKey();
+    if (key) setSyncKey(key);
+    const status = await storageService.getDbStatus();
+    setLastSync(status.lastSync);
+  };
 
   const inspectDatabase = async () => {
     const dump = await storageService.exportDatabase();
@@ -79,7 +94,10 @@ const CompanySettings: React.FC<SettingsProps> = ({ role }) => {
   };
 
   const handleCreateUser = async () => {
-    if (!newUser.name || !newUser.username) return;
+    if (!newUser.name || !newUser.username || !newUser.position) {
+      alert("Name, Position, and Username are mandatory.");
+      return;
+    }
     setIsSaving(true);
     const account: UserAccount = {
       ...newUser,
@@ -87,7 +105,7 @@ const CompanySettings: React.FC<SettingsProps> = ({ role }) => {
     } as UserAccount;
     await storageService.saveUser(account);
     await loadUsers();
-    setNewUser({ name: '', role: 'Staff', department: 'OPERATIONS', username: '', password: 'password123' });
+    setNewUser({ name: '', role: 'Staff', position: '', department: 'OPERATIONS', username: '', password: 'password123', jobDescription: '' });
     setIsSaving(false);
   };
 
@@ -122,6 +140,21 @@ const CompanySettings: React.FC<SettingsProps> = ({ role }) => {
     await storageService.processPasswordRequest(id, approved);
     await loadPwRequests();
     await loadUsers();
+  };
+
+  const handleConnectSync = async () => {
+    if (!syncKey.trim()) return;
+    setIsSyncing(true);
+    await storageService.setSyncKey(syncKey.trim());
+    await loadSyncStatus();
+    await loadUsers();
+    setIsSyncing(false);
+    alert("Strategic Sync Node Established. Pulling cloud state...");
+  };
+
+  const handleGenerateSyncKey = () => {
+    const newKey = `GMYT-${Math.random().toString(36).substring(2, 6).toUpperCase()}-${Math.random().toString(36).substring(2, 6).toUpperCase()}`;
+    setSyncKey(newKey);
   };
 
   const handleExportDB = async () => {
@@ -168,156 +201,73 @@ const CompanySettings: React.FC<SettingsProps> = ({ role }) => {
 
   return (
     <div className="max-w-5xl mx-auto space-y-12 pb-20 animate-in fade-in duration-700">
-      {/* Brand Section */}
-      <div className="bg-zinc-900 border border-zinc-800 rounded-3xl overflow-hidden shadow-2xl">
-        <div className="h-40 gold-gradient relative">
-          <div className="absolute -bottom-12 left-8 w-24 h-24 rounded-2xl bg-zinc-950 border-4 border-zinc-900 flex items-center justify-center overflow-hidden">
-            <span className="text-amber-500 font-black text-3xl">G</span>
-          </div>
-        </div>
-        
-        <div className="pt-20 px-8 pb-8 space-y-8">
-          <div>
-            <h2 className="text-2xl font-bold text-white tracking-tight uppercase">Strategic Profile</h2>
-            <p className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">Global Entity Registry</p>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="space-y-2">
-              <label className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest flex items-center gap-2">
-                <Globe size={12} /> Entity Legal Name
-              </label>
-              <input 
-                type="text" 
-                value={company.name}
-                onChange={(e) => setCompany({...company, name: e.target.value})}
-                className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-4 py-3 text-sm focus:border-amber-500 outline-none transition-all font-bold text-white"
-              />
-            </div>
-            <div className="space-y-2">
-              <label className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest flex items-center gap-2">
-                <MapPin size={12} /> Headquarters
-              </label>
-              <input 
-                type="text" 
-                value={company.address}
-                onChange={(e) => setCompany({...company, address: e.target.value})}
-                className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-4 py-3 text-sm focus:border-amber-500 outline-none transition-all font-bold text-white"
-              />
-            </div>
-          </div>
-          <button className="w-full py-4 gold-gradient rounded-2xl text-black font-black uppercase text-xs tracking-[0.2em] flex items-center justify-center gap-2 hover:shadow-[0_0_30px_rgba(251,191,36,0.3)] transition-all">
-            <Save size={18} /> Update Corporate Profile
-          </button>
-        </div>
-      </div>
-
-      {/* Security & Password Section (All Users) */}
+      {/* Strategic Sync Hub (Multi-Device) */}
       <div className="space-y-6">
         <div className="flex items-center gap-3">
-          <Key className="text-amber-500" />
-          <h2 className="text-xl font-bold text-white tracking-tight uppercase">Security & Authentication</h2>
+          <Cloud className="text-blue-500" />
+          <h2 className="text-xl font-bold text-white tracking-tight uppercase">Strategic Cloud Sync Hub</h2>
         </div>
         
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-           <div className="bg-zinc-900 border border-zinc-800 p-8 rounded-3xl space-y-6">
-              <h3 className="text-[10px] font-black text-zinc-500 uppercase tracking-[0.2em]">Credential Management</h3>
-              <div className="space-y-4">
-                 <div className="space-y-2">
-                   <label className="text-[10px] font-bold text-zinc-600 uppercase tracking-widest">New System Key</label>
-                   <input 
-                     type="password"
-                     placeholder="Enter new password..."
-                     className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-4 py-3 text-xs focus:border-amber-500 outline-none text-white font-bold shadow-inner"
-                     value={newPassword}
-                     onChange={e => setNewPassword(e.target.value)}
-                   />
-                 </div>
-                 <button 
-                   onClick={handleSubmitPwRequest}
-                   disabled={isRequestingPw || !newPassword}
-                   className="w-full py-4 bg-zinc-800 text-white rounded-xl text-[10px] font-black uppercase tracking-[0.2em] flex items-center justify-center gap-2 hover:bg-zinc-700 transition-colors disabled:opacity-50"
-                 >
-                   {isRequestingPw ? <Loader2 className="animate-spin" size={14} /> : (currentUser?.role === 'CEO' ? 'Apply Direct Override' : 'Submit for Approval')}
-                 </button>
-                 <p className="text-[9px] text-zinc-500 text-center uppercase tracking-widest italic">
-                   {currentUser?.role === 'CEO' ? 'CEO changes bypass the authorization queue.' : 'All credential changes require CEO authorization.'}
-                 </p>
-              </div>
+        <div className="bg-zinc-900 border border-zinc-800 rounded-3xl overflow-hidden shadow-2xl p-8 relative">
+           <div className="absolute top-0 right-0 p-8 opacity-5">
+              <RefreshCw size={120} className="animate-spin-slow" />
            </div>
 
-           <div className="bg-zinc-900 border border-zinc-800 p-8 rounded-3xl space-y-6">
-              <h3 className="text-[10px] font-black text-zinc-500 uppercase tracking-[0.2em] flex items-center gap-2">
-                <History size={14} /> My Request History
-              </h3>
-              <div className="space-y-3 overflow-y-auto max-h-48 no-scrollbar">
-                 {myRequests.length === 0 ? (
-                   <p className="text-[10px] text-zinc-600 text-center py-8 font-bold uppercase tracking-widest">No previous requests found.</p>
-                 ) : (
-                   myRequests.map(req => (
-                     <div key={req.id} className="bg-zinc-950 border border-zinc-800 rounded-xl p-3 flex items-center justify-between">
-                        <div>
-                           <p className="text-[10px] font-black text-white uppercase tracking-tight">System Key Update</p>
-                           <p className="text-[9px] text-zinc-500">{req.requestDate}</p>
-                        </div>
-                        <span className={`text-[9px] font-black px-2 py-0.5 rounded-full border ${req.status === 'Approved' ? 'border-emerald-500/30 text-emerald-500' : req.status === 'Pending' ? 'border-amber-500/30 text-amber-500' : 'border-rose-500/30 text-rose-500'}`}>
-                           {req.status}
-                        </span>
-                     </div>
-                   ))
-                 )}
+           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 relative z-10">
+              <div className="space-y-6">
+                 <div>
+                    <h3 className="text-xs font-black text-white uppercase tracking-[0.2em]">Multi-Device Provisioning</h3>
+                    <p className="text-[9px] text-zinc-500 mt-1 uppercase tracking-widest font-bold">Protocol: Vercel Cloud Mirror v1.2</p>
+                 </div>
+                 
+                 <div className="space-y-4">
+                    <div className="space-y-2">
+                       <label className="text-[10px] font-bold text-zinc-600 uppercase tracking-widest">Enterprise Sync Key</label>
+                       <div className="flex gap-2">
+                          <input 
+                            type="text"
+                            placeholder="GMYT-XXXX-XXXX"
+                            className="flex-1 bg-zinc-950 border border-zinc-800 rounded-xl px-4 py-3 text-sm focus:border-amber-500 outline-none text-white font-mono"
+                            value={syncKey}
+                            onChange={e => setSyncKey(e.target.value)}
+                          />
+                          <button 
+                            onClick={handleGenerateSyncKey}
+                            className="p-3 bg-zinc-800 text-zinc-400 hover:text-white rounded-xl transition-all"
+                            title="Generate Key"
+                          >
+                             <Zap size={18} />
+                          </button>
+                       </div>
+                    </div>
+                    <button 
+                      onClick={handleConnectSync}
+                      disabled={isSyncing || !syncKey}
+                      className="w-full py-4 gold-gradient text-black font-black rounded-xl text-[10px] font-black uppercase tracking-[0.2em] flex items-center justify-center gap-2 hover:shadow-[0_0_20px_rgba(251,191,36,0.2)] transition-all disabled:opacity-50"
+                    >
+                       {isSyncing ? <Loader2 className="animate-spin" size={14} /> : <><RefreshCw size={14} /> Establish Sync Link</>}
+                    </button>
+                 </div>
+              </div>
+
+              <div className="bg-zinc-950/50 border border-zinc-800 rounded-2xl p-6 flex flex-col justify-center text-center space-y-4">
+                 <div className="flex items-center justify-center gap-3">
+                    {syncKey ? <Cloud className="text-emerald-500" size={32} /> : <CloudOff className="text-zinc-700" size={32} />}
+                 </div>
+                 <div>
+                    <p className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">Global Node Status</p>
+                    <p className={`text-lg font-bold mt-1 ${syncKey ? 'text-emerald-500' : 'text-zinc-600'}`}>
+                       {syncKey ? 'ACTIVE HUB' : 'LOCAL ONLY'}
+                    </p>
+                 </div>
+                 <div className="pt-4 border-t border-zinc-800/50">
+                    <p className="text-[9px] font-bold text-zinc-600 uppercase tracking-widest">Last Remote Mirror</p>
+                    <p className="text-xs text-zinc-400 font-mono mt-1">{lastSync}</p>
+                 </div>
               </div>
            </div>
         </div>
       </div>
-
-      {/* CEO Approval Queue */}
-      {role === 'CEO' && pendingApprovals.length > 0 && (
-        <div className="space-y-6 animate-in slide-in-from-bottom-4 duration-500">
-           <div className="flex items-center gap-3">
-              <ShieldAlert className="text-amber-500" />
-              <h2 className="text-xl font-bold text-white tracking-tight uppercase">Credential Approval Queue</h2>
-           </div>
-           <div className="bg-zinc-900 border border-zinc-800 rounded-3xl overflow-hidden shadow-2xl">
-              <table className="w-full text-left">
-                <thead className="bg-zinc-950 text-zinc-500 text-[10px] uppercase font-bold tracking-[0.2em]">
-                   <tr>
-                      <th className="px-8 py-4">Node Identity</th>
-                      <th className="px-8 py-4">Request Date</th>
-                      <th className="px-8 py-4 text-right">Authorize</th>
-                   </tr>
-                </thead>
-                <tbody className="divide-y divide-zinc-800">
-                   {pendingApprovals.map(req => (
-                     <tr key={req.id} className="hover:bg-zinc-800/30 transition-colors">
-                        <td className="px-8 py-4">
-                           <p className="text-sm font-bold text-white">{req.userName}</p>
-                           <p className="text-[9px] text-zinc-500 font-black uppercase tracking-widest">Security Override Requested</p>
-                        </td>
-                        <td className="px-8 py-4 text-xs font-mono text-zinc-400">{req.requestDate}</td>
-                        <td className="px-8 py-4 text-right">
-                           <div className="flex justify-end gap-2">
-                              <button 
-                                onClick={() => handleProcessPwRequest(req.id, true)}
-                                className="p-2 bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 rounded-lg hover:bg-emerald-500 hover:text-black transition-all"
-                              >
-                                 <Check size={16} />
-                              </button>
-                              <button 
-                                onClick={() => handleProcessPwRequest(req.id, false)}
-                                className="p-2 bg-rose-500/10 text-rose-500 border border-rose-500/20 rounded-lg hover:bg-rose-500 hover:text-white transition-all"
-                              >
-                                 <X size={16} />
-                              </button>
-                           </div>
-                        </td>
-                     </tr>
-                   ))}
-                </tbody>
-              </table>
-           </div>
-        </div>
-      )}
 
       {/* Database Maintenance Section */}
       <div className="space-y-6">
@@ -388,18 +338,28 @@ const CompanySettings: React.FC<SettingsProps> = ({ role }) => {
               </h3>
               <div className="space-y-4">
                 <input placeholder="Full Name" className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-4 py-3 text-xs focus:border-amber-500 outline-none text-white font-bold" value={newUser.name} onChange={e => setNewUser({...newUser, name: e.target.value})} />
-                <select className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-4 py-3 text-xs focus:border-amber-500 outline-none text-white font-bold" value={newUser.role} onChange={e => setNewUser({...newUser, role: e.target.value as UserRole})}>
-                  <option value="Staff">Regular Staff</option>
-                  <option value="Project Manager">Strategic Manager</option>
-                  <option value="Accountant">Financial Officer</option>
-                  <option value="CEO">Executive Lead</option>
-                </select>
-                <select className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-4 py-3 text-xs focus:border-amber-500 outline-none text-white font-bold" value={newUser.department} onChange={e => setNewUser({...newUser, department: e.target.value})}>
-                  {DEPARTMENTS.map(dept => (
-                    <option key={dept} value={dept}>{dept}</option>
-                  ))}
-                </select>
-                <input placeholder="Username" className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-4 py-3 text-xs focus:border-amber-500 outline-none text-white font-bold" value={newUser.username} onChange={e => setNewUser({...newUser, username: e.target.value})} />
+                <div className="grid grid-cols-2 gap-3">
+                  <select className="bg-zinc-950 border border-zinc-800 rounded-xl px-4 py-3 text-xs focus:border-amber-500 outline-none text-white font-bold" value={newUser.role} onChange={e => setNewUser({...newUser, role: e.target.value as UserRole})}>
+                    <option value="Staff">Staff</option>
+                    <option value="Project Manager">Strategic Manager</option>
+                    <option value="Accountant">Financial Officer</option>
+                    <option value="CEO">Executive Lead</option>
+                  </select>
+                  <select className="bg-zinc-950 border border-zinc-800 rounded-xl px-4 py-3 text-xs focus:border-amber-500 outline-none text-white font-bold" value={newUser.department} onChange={e => setNewUser({...newUser, department: e.target.value})}>
+                    {DEPARTMENTS.map(dept => (
+                      <option key={dept} value={dept}>{dept}</option>
+                    ))}
+                  </select>
+                </div>
+                <input placeholder="Position (e.g. ICT Manager)" className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-4 py-3 text-xs focus:border-amber-500 outline-none text-white font-bold" value={newUser.position} onChange={e => setNewUser({...newUser, position: e.target.value})} />
+                <textarea 
+                  placeholder="Master Job Description (Strategic Directive)" 
+                  rows={3}
+                  className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-4 py-3 text-xs focus:border-amber-500 outline-none text-white font-medium resize-none" 
+                  value={newUser.jobDescription} 
+                  onChange={e => setNewUser({...newUser, jobDescription: e.target.value})} 
+                />
+                <input placeholder="Auth Username" className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-4 py-3 text-xs focus:border-amber-500 outline-none text-white font-bold" value={newUser.username} onChange={e => setNewUser({...newUser, username: e.target.value})} />
                 <input type="password" placeholder="Key Phrase" className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-4 py-3 text-xs focus:border-amber-500 outline-none text-white font-bold" value={newUser.password} onChange={e => setNewUser({...newUser, password: e.target.value})} />
               </div>
               <button onClick={handleCreateUser} disabled={isSaving} className="w-full py-4 bg-zinc-800 text-white rounded-xl text-[10px] font-black uppercase tracking-[0.2em] flex items-center justify-center gap-2 hover:bg-zinc-700 transition-colors disabled:opacity-50">
@@ -412,7 +372,7 @@ const CompanySettings: React.FC<SettingsProps> = ({ role }) => {
                 <thead className="bg-zinc-950 text-zinc-500 text-[10px] uppercase font-bold tracking-[0.2em]">
                   <tr>
                     <th className="px-8 py-4">Node Identity</th>
-                    <th className="px-8 py-4">Auth Handle</th>
+                    <th className="px-8 py-4">Strategic Role</th>
                     <th className="px-8 py-4 text-right">Control</th>
                   </tr>
                 </thead>
@@ -420,10 +380,20 @@ const CompanySettings: React.FC<SettingsProps> = ({ role }) => {
                   {users.map((u) => (
                     <tr key={u.id} className="hover:bg-zinc-800/30 group">
                       <td className="px-8 py-4">
-                        <p className="text-sm font-bold text-white">{u.name}</p>
-                        <p className={`text-[9px] font-black uppercase tracking-widest ${u.role === 'CEO' ? 'text-amber-500' : 'text-zinc-500'}`}>{u.role}</p>
+                        <div className="flex items-center gap-3">
+                           <div className="w-8 h-8 rounded-lg bg-zinc-950 border border-zinc-800 flex items-center justify-center">
+                              <ShieldCheck size={14} className={u.role === 'CEO' ? 'text-amber-500' : 'text-zinc-500'} />
+                           </div>
+                           <div>
+                              <p className="text-sm font-bold text-white">{u.name}</p>
+                              <p className="text-[9px] text-zinc-500 font-mono italic">@{u.username}</p>
+                           </div>
+                        </div>
                       </td>
-                      <td className="px-8 py-4 text-xs font-mono text-zinc-400">@{u.username}</td>
+                      <td className="px-8 py-4">
+                        <p className={`text-[10px] font-black uppercase tracking-widest ${u.role === 'CEO' ? 'text-amber-500' : 'text-zinc-300'}`}>{u.position || u.role}</p>
+                        <p className="text-[9px] text-zinc-600 font-bold uppercase tracking-tighter mt-0.5">{u.department || 'GLOBAL'}</p>
+                      </td>
                       <td className="px-8 py-4 text-right">
                          {u.id !== 'u-ceo' && (
                            <button onClick={() => handleDeleteUser(u.id)} className="p-2 text-rose-500 hover:bg-rose-500/10 rounded-lg opacity-0 group-hover:opacity-100 transition-all">

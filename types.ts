@@ -44,6 +44,7 @@ export interface Task {
   id: string;
   sn: number;
   role: string; // Job Description / Core Objective
+  tasksForToday: string; // Immediate execution items
   problem: {
     description: string; // Problem Identification
     rootCauseAndConsequences: string; // Root Cause & Consequences

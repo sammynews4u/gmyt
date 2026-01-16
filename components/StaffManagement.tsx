@@ -82,7 +82,8 @@ const StaffManagement: React.FC<StaffManagementProps> = ({ role }) => {
   const filteredUsers = users.filter(u => 
     u.name.toLowerCase().includes(search.toLowerCase()) || 
     u.role.toLowerCase().includes(search.toLowerCase()) ||
-    (u.department?.toLowerCase() || '').includes(search.toLowerCase())
+    (u.department?.toLowerCase() || '').includes(search.toLowerCase()) ||
+    (u.position?.toLowerCase() || '').includes(search.toLowerCase())
   );
 
   if (isLoading) return <div className="h-96 flex items-center justify-center"><Loader2 className="animate-spin text-amber-500" size={48} /></div>;
@@ -119,7 +120,7 @@ const StaffManagement: React.FC<StaffManagementProps> = ({ role }) => {
           <div key={user.id} className="bg-zinc-900 border border-zinc-800 rounded-[3rem] p-8 hover:border-amber-500/40 transition-all group relative overflow-hidden shadow-2xl">
             <div className="absolute top-0 right-0 w-40 h-40 bg-amber-500/5 blur-[80px] rounded-full -z-10 group-hover:bg-amber-500/10 transition-colors"></div>
             
-            <div className="flex justify-between items-start mb-10">
+            <div className="flex justify-between items-start mb-6">
               <div className="flex items-center gap-6">
                 <div className="w-20 h-20 rounded-[1.75rem] gold-gradient p-[1.5px] shadow-2xl shadow-amber-500/10">
                   <div className="w-full h-full rounded-[1.75rem] bg-zinc-950 flex items-center justify-center overflow-hidden">
@@ -142,14 +143,20 @@ const StaffManagement: React.FC<StaffManagementProps> = ({ role }) => {
               )}
             </div>
 
-            <div className="space-y-4 mb-10">
+            <div className="bg-zinc-950/50 rounded-2xl p-4 mb-6 border border-zinc-800/50">
+               <div className="flex items-center gap-2 mb-2">
+                  <FileText size={10} className="text-amber-500" />
+                  <span className="text-[9px] font-black text-zinc-500 uppercase tracking-[0.2em]">Persistent Directive</span>
+               </div>
+               <p className="text-[11px] text-zinc-300 font-medium leading-relaxed italic line-clamp-3">
+                  {user.jobDescription || "No master job description defined for this role yet."}
+               </p>
+            </div>
+
+            <div className="space-y-4 mb-8">
               <div className="flex items-center gap-4 text-[11px] text-zinc-400 font-bold uppercase tracking-widest">
                 <div className="w-8 h-8 rounded-xl bg-zinc-950 flex items-center justify-center text-amber-500 border border-zinc-800"><Briefcase size={14}/></div>
                 {user.position || user.title || 'UNASSIGNED ROLE'}
-              </div>
-              <div className="flex items-center gap-4 text-[11px] text-zinc-400 font-bold tracking-widest">
-                <div className="w-8 h-8 rounded-xl bg-zinc-950 flex items-center justify-center text-amber-500 border border-zinc-800"><Mail size={14}/></div>
-                {user.email || 'PENDING EMAIL'}
               </div>
               <div className="flex items-center gap-4 text-[11px] font-black uppercase tracking-widest">
                 <div className="w-8 h-8 rounded-xl bg-zinc-950 flex items-center justify-center text-emerald-500 border border-zinc-800"><Banknote size={14}/></div>
@@ -165,13 +172,13 @@ const StaffManagement: React.FC<StaffManagementProps> = ({ role }) => {
                 onClick={() => { setSelectedStaff(user); setIsEditModalOpen(true); }}
                 className="flex items-center justify-center gap-3 py-3.5 bg-zinc-950 border border-zinc-800 text-zinc-400 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:text-white hover:border-zinc-600 transition-all"
               >
-                <ClipboardList size={16} /> Task Sheet
+                <ClipboardList size={16} /> Task Board
               </button>
               <button 
                  onClick={() => { setSelectedStaff(user); setIsEditModalOpen(true); }}
                  className="flex items-center justify-center gap-3 py-3.5 bg-amber-500 text-black rounded-2xl text-[10px] font-black uppercase tracking-widest hover:shadow-[0_0_20px_rgba(245,158,11,0.3)] transition-all"
               >
-                <Settings2 size={16} /> Settings
+                <Settings2 size={16} /> Edit Profile
               </button>
             </div>
           </div>
