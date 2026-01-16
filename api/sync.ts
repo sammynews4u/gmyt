@@ -1,6 +1,5 @@
-
-import { VercelRequest, VercelResponse } from '@vercel/node';
-import pg from 'pg';
+import type { NextApiRequest, NextApiResponse } from "next";
+import pg from "pg";
 
 const { Pool } = pg;
 
@@ -16,11 +15,11 @@ const pool = new Pool({
  * PRODUCTION PROTOCOL: GMYT-SYNC-V2
  * Handles global state persistence using CockroachDB JSONB storage.
  */
-export default async function handler(req: VercelRequest, res: VercelResponse) {
-  const { key } = req.query;
+export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+  const key = Array.isArray(req.query.key) ? req.query.key[0] : req.query.key;
 
-  if (!key || typeof key !== 'string') {
-    return res.status(400).json({ error: 'Strategic Sync Key required for node handshake' });
+  if (!key) {
+    return res.status(400).json({ error: "Strategic Sync Key required for node handshake" });
   }
 
   // Ensure table exists on first run
@@ -37,54 +36,57 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   try {
-    if (req.method === 'GET') {
+    if (req.method === "GET") {
       // PULL: Retrieve the global state for the given sync key
       const result = await pool.query(
-        'SELECT payload FROM gmyt_enterprise_sync WHERE sync_key = $1',
+        "SELECT payload FROM gmyt_enterprise_sync WHERE sync_key = $1",
         [key]
       );
 
       if (result.rows.length === 0) {
-        return res.status(200).json({ 
-          message: 'Node detected but uninitialized', 
-          data: null 
+        return res.status(200).json({
+          message: "Node detected but uninitialized",
+          data: null
         });
       }
 
-      return res.status(200).json({ 
-        message: 'Pull successful', 
+      return res.status(200).json({
+        message: "Pull successful",
         data: result.rows[0].payload,
-        timestamp: new Date().toISOString() 
+        timestamp: new Date().toISOString()
       });
     }
 
-    if (req.method === 'POST') {
+    if (req.method === "POST") {
       // PUSH: Synchronize local state to the cloud cluster
       const data = req.body;
-      
-      if (!data || typeof data !== 'object') {
-        return res.status(400).json({ error: 'Invalid payload format' });
+
+      if (!data || typeof data !== "object") {
+        return res.status(400).json({ error: "Invalid payload format" });
       }
 
-      await pool.query(`
+      await pool.query(
+        `
         INSERT INTO gmyt_enterprise_sync (sync_key, payload, last_updated)
         VALUES ($1, $2, now())
-        ON CONFLICT (sync_key) 
+        ON CONFLICT (sync_key)
         DO UPDATE SET payload = EXCLUDED.payload, last_updated = now();
-      `, [key, JSON.stringify(data)]);
+        `,
+        [key, JSON.stringify(data)]
+      );
 
-      return res.status(200).json({ 
-        message: 'Cloud Node Hydrated successfully', 
-        timestamp: new Date().toISOString() 
+      return res.status(200).json({
+        message: "Cloud Node Hydrated successfully",
+        timestamp: new Date().toISOString()
       });
     }
 
-    return res.status(405).json({ error: 'Method not allowed' });
+    return res.status(405).json({ error: "Method not allowed" });
   } catch (error: any) {
     console.error("Database Transaction Error:", error);
-    return res.status(500).json({ 
-      error: 'Strategic Link Failure', 
-      details: error.message 
+    return res.status(500).json({
+      error: "Strategic Link Failure",
+      details: error?.message || String(error)
     });
   }
 }
