@@ -1,4 +1,3 @@
-import type { NextApiRequest, NextApiResponse } from "next";
 import pg from "pg";
 
 const { Pool } = pg;
@@ -15,10 +14,11 @@ const pool = new Pool({
  * PRODUCTION PROTOCOL: GMYT-SYNC-V2
  * Handles global state persistence using CockroachDB JSONB storage.
  */
-export default async function handler(req: NextApiRequest, res: NextApiResponse) {
-  const key = Array.isArray(req.query.key) ? req.query.key[0] : req.query.key;
+export default async function handler(req: any, res: any) {
+  const rawKey = req?.query?.key;
+  const key = Array.isArray(rawKey) ? rawKey[0] : rawKey;
 
-  if (!key) {
+  if (!key || typeof key !== "string") {
     return res.status(400).json({ error: "Strategic Sync Key required for node handshake" });
   }
 

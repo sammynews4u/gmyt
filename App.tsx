@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { 
   LayoutDashboard, ClipboardList, Package, Banknote, Target, 
@@ -26,6 +25,8 @@ import HiringPortal from './components/HiringPortal';
 import { UserRole, UserAccount } from './types';
 import { storageService } from './services/storageService';
 
+type DbStatus = { status: string; latency: string; engine?: string };
+
 const App: React.FC = () => {
   const [showLanding, setShowLanding] = useState(true);
   const [currentUser, setCurrentUser] = useState<UserAccount | null>(null);
@@ -34,7 +35,7 @@ const App: React.FC = () => {
   const [isMeetingActive, setIsMeetingActive] = useState(false);
   const [meetingContext, setMeetingContext] = useState<{title: string, type: 'Meeting' | 'Interview'}>({title: '', type: 'Meeting'});
   const [systemStaff, setSystemStaff] = useState<UserAccount[]>([]);
-  const [dbStatus, setDbStatus] = useState({ status: 'Connecting', latency: '0ms' });
+  const [dbStatus, setDbStatus] = useState<DbStatus>({ status: 'Connecting', latency: '0ms', engine: 'Unknown' });
   const [time, setTime] = useState(new Date());
   const [isSyncing, setIsSyncing] = useState(false);
 
@@ -205,7 +206,9 @@ const App: React.FC = () => {
                    </div>
                    <Cloud size={12} className="text-zinc-700" />
                 </div>
-                <div className="text-[9px] font-bold text-zinc-600 truncate uppercase tracking-tighter">ENGINE: {dbStatus.engine}</div>
+                <div className="text-[9px] font-bold text-zinc-600 truncate uppercase tracking-tighter">
+                  ENGINE: {dbStatus.engine ?? "Unknown"}
+                </div>
              </div>
           </div>
         )}
