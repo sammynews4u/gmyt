@@ -12,7 +12,8 @@ export const storageService = {
 
   async setSyncKey(key: string) {
     localStorage.setItem('gmyt_sync_key', key);
-    return await this.pullFromCloud();
+    // After setting key, immediately try to sync/hydrate
+    await this.pullFromCloud();
   },
 
   async pushToCloud() {
@@ -35,6 +36,15 @@ export const storageService = {
     }
   },
 
+  /**
+   * CRITICAL PROTOCOL: Manually force push all local data to the cloud.
+   * This ensures that the CockroachDB node is hydrated with the initial local state.
+   */
+  async forcePushAll() {
+    await this.pushToCloud();
+    return true;
+  },
+
   async pullFromCloud(): Promise<boolean> {
     const key = await this.getSyncKey();
     if (!key) return false;
@@ -44,14 +54,20 @@ export const storageService = {
       const result = await response.json();
       
       if (result.data) {
+        // Cloud has data, merge/import
         const success = await this.importDatabase(JSON.stringify(result.data));
         if (success) {
           localStorage.setItem('gmyt_last_sync', new Date().toISOString());
           return true;
         }
+      } else {
+        // Cloud is empty! Auto-hydrate by pushing local state to the cloud
+        console.log("Strategic Sync: Cloud is empty. Hydrating remote cluster...");
+        await this.forcePushAll();
+        return true;
       }
     } catch (e) {
-      console.warn("Cloud Sync Pull Failed", e);
+      console.warn("Cloud Sync Handshake Failed", e);
     }
     return false;
   },
@@ -109,17 +125,19 @@ export const storageService = {
         jobDescription: 'Oversee, manage and ensure full functionality of all ICT systems across the organization. The role cut across systems, infrastructure, platforms, data, contents, and technical support, and requires daily visibility and execution.'
       };
       await dbEngine.putBulk(STORES.USERS, [ceo, ictManager]);
+      // Attempt immediate hydration
+      this.pushToCloud();
       return [ceo, ictManager];
     }
     return users;
   },
   async saveUser(user: UserAccount) { 
     await dbEngine.put(STORES.USERS, user); 
-    this.pushToCloud();
+    await this.pushToCloud();
   },
   async deleteUser(id: string) { 
     await dbEngine.delete(STORES.USERS, id); 
-    this.pushToCloud();
+    await this.pushToCloud();
   },
 
   // Password Requests
@@ -135,7 +153,7 @@ export const storageService = {
       request.status = 'Approved';
     }
     await dbEngine.put(STORES.PASSWORD_REQUESTS, request);
-    this.pushToCloud();
+    await this.pushToCloud();
   },
   async processPasswordRequest(requestId: string, approved: boolean) {
     const requests = await this.getPasswordRequests();
@@ -153,32 +171,32 @@ export const storageService = {
       req.status = 'Rejected';
     }
     await dbEngine.put(STORES.PASSWORD_REQUESTS, req);
-    this.pushToCloud();
+    await this.pushToCloud();
   },
 
   // Tasks
   async getTasks(): Promise<Task[]> { return dbEngine.getAll<Task>(STORES.TASKS); },
   async saveTask(task: Task) { 
     await dbEngine.put(STORES.TASKS, task); 
-    this.pushToCloud();
+    await this.pushToCloud();
   },
   async deleteTask(id: string) { 
     await dbEngine.delete(STORES.TASKS, id); 
-    this.pushToCloud();
+    await this.pushToCloud();
   },
 
   // Inventory
   async getInventory(): Promise<InventoryItem[]> { return dbEngine.getAll<InventoryItem>(STORES.INVENTORY); },
   async saveInventory(items: InventoryItem[]) { 
     await dbEngine.putBulk(STORES.INVENTORY, items); 
-    this.pushToCloud();
+    await this.pushToCloud();
   },
 
   // Payroll
   async getPayroll(): Promise<Paycheck[]> { return dbEngine.getAll<Paycheck>(STORES.PAYROLL); },
   async savePayroll(payrolls: Paycheck[]) { 
     await dbEngine.putBulk(STORES.PAYROLL, payrolls); 
-    this.pushToCloud();
+    await this.pushToCloud();
   },
   async updatePaycheckStatus(id: string, status: 'Paid') {
     const payrolls = await this.getPayroll();
@@ -186,7 +204,7 @@ export const storageService = {
     if (paycheck) {
       paycheck.status = status;
       await dbEngine.put(STORES.PAYROLL, paycheck);
-      this.pushToCloud();
+      await this.pushToCloud();
     }
   },
 
@@ -194,25 +212,25 @@ export const storageService = {
   async getOnboardingDocs(): Promise<OnboardingRecord[]> { return dbEngine.getAll<OnboardingRecord>(STORES.ONBOARDING); },
   async saveOnboardingDoc(doc: OnboardingRecord) { 
     await dbEngine.put(STORES.ONBOARDING, doc); 
-    this.pushToCloud();
+    await this.pushToCloud();
   },
   async deleteOnboardingDoc(id: string) { 
     await dbEngine.delete(STORES.ONBOARDING, id); 
-    this.pushToCloud();
+    await this.pushToCloud();
   },
 
   // Attendance
   async getAttendance(): Promise<AttendanceRecord[]> { return dbEngine.getAll<AttendanceRecord>(STORES.ATTENDANCE); },
   async saveAttendanceRecord(record: AttendanceRecord) { 
     await dbEngine.put(STORES.ATTENDANCE, record); 
-    this.pushToCloud();
+    await this.pushToCloud();
   },
 
   // Complaints
   async getComplaints(): Promise<Complaint[]> { return dbEngine.getAll<Complaint>(STORES.COMPLAINTS); },
   async saveComplaint(complaint: Complaint) { 
     await dbEngine.put(STORES.COMPLAINTS, complaint); 
-    this.pushToCloud();
+    await this.pushToCloud();
   },
   async resolveComplaint(id: string) {
     const complaints = await this.getComplaints();
@@ -220,7 +238,7 @@ export const storageService = {
     if (item) {
       item.status = 'Resolved';
       await dbEngine.put(STORES.COMPLAINTS, item);
-      this.pushToCloud();
+      await this.pushToCloud();
     }
   },
 
@@ -228,13 +246,13 @@ export const storageService = {
   async getMeetings(): Promise<MeetingMinutes[]> { return dbEngine.getAll<MeetingMinutes>(STORES.MEETINGS); },
   async saveMeeting(meeting: MeetingMinutes) { 
     await dbEngine.put(STORES.MEETINGS, meeting); 
-    this.pushToCloud();
+    await this.pushToCloud();
   },
 
   // Templates
   async getTemplates(): Promise<TaskTemplate[]> { return dbEngine.getAll<TaskTemplate>(STORES.TEMPLATES); },
   async saveTemplate(template: TaskTemplate) { 
     await dbEngine.put(STORES.TEMPLATES, template); 
-    this.pushToCloud();
+    await this.pushToCloud();
   }
 };

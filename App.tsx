@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { 
   LayoutDashboard, ClipboardList, Package, Banknote, Target, 
@@ -25,8 +26,6 @@ import HiringPortal from './components/HiringPortal';
 import { UserRole, UserAccount } from './types';
 import { storageService } from './services/storageService';
 
-type DbStatus = { status: string; latency: string; engine?: string };
-
 const App: React.FC = () => {
   const [showLanding, setShowLanding] = useState(true);
   const [currentUser, setCurrentUser] = useState<UserAccount | null>(null);
@@ -35,7 +34,13 @@ const App: React.FC = () => {
   const [isMeetingActive, setIsMeetingActive] = useState(false);
   const [meetingContext, setMeetingContext] = useState<{title: string, type: 'Meeting' | 'Interview'}>({title: '', type: 'Meeting'});
   const [systemStaff, setSystemStaff] = useState<UserAccount[]>([]);
-  const [dbStatus, setDbStatus] = useState<DbStatus>({ status: 'Connecting', latency: '0ms', engine: 'Unknown' });
+  const [dbStatus, setDbStatus] = useState({ 
+    status: 'Connecting', 
+    latency: '0ms',
+    engine: 'Initializing...',
+    persistence: 'Local Transactional',
+    lastSync: 'Never'
+  });
   const [time, setTime] = useState(new Date());
   const [isSyncing, setIsSyncing] = useState(false);
 
@@ -52,10 +57,30 @@ const App: React.FC = () => {
     }
     loadSystemStaff();
     checkDbHealth();
+
+    // Automatic Periodic Cloud Sync (Every 5 minutes)
+    const syncInterval = setInterval(() => {
+      autoBackgroundSync();
+    }, 5 * 60 * 1000);
+
+    return () => clearInterval(syncInterval);
   }, []);
+
+  const autoBackgroundSync = async () => {
+    const syncKey = await storageService.getSyncKey();
+    if (syncKey) {
+      setIsSyncing(true);
+      await storageService.pullFromCloud();
+      const status = await storageService.getDbStatus();
+      setDbStatus(status);
+      setIsSyncing(false);
+    }
+  };
 
   const checkDbHealth = async () => {
     setIsSyncing(true);
+    // On mount, pull from cloud to ensure latest state is local
+    await storageService.pullFromCloud();
     const status = await storageService.getDbStatus();
     setDbStatus(status);
     setTimeout(() => setIsSyncing(false), 800);
@@ -201,14 +226,12 @@ const App: React.FC = () => {
                    <div className="flex items-center gap-2">
                       <div className={`w-1.5 h-1.5 rounded-full ${isSyncing ? 'bg-amber-500 animate-ping' : 'bg-emerald-500'} transition-colors`}></div>
                       <span className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">
-                        {isSyncing ? 'Writing to DB...' : 'DB Online'}
+                        {isSyncing ? 'Syncing...' : 'DB Online'}
                       </span>
                    </div>
                    <Cloud size={12} className="text-zinc-700" />
                 </div>
-                <div className="text-[9px] font-bold text-zinc-600 truncate uppercase tracking-tighter">
-                  ENGINE: {dbStatus.engine ?? "Unknown"}
-                </div>
+                <div className="text-[9px] font-bold text-zinc-600 truncate uppercase tracking-tighter">ENGINE: {dbStatus.engine}</div>
              </div>
           </div>
         )}
