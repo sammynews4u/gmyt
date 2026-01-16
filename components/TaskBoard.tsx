@@ -30,7 +30,6 @@ const TaskBoard: React.FC<TaskBoardProps> = ({ role, staff }) => {
   const [expandedTaskId, setExpandedTaskId] = useState<string | null>(null);
 
   const isCEO = role === 'CEO';
-  const isManagement = isCEO || role === 'Project Manager';
 
   const TIME_BOUND_OPTIONS = [
     "30 Minutes", "1 Hour", "1.5 Hours", "2 Hours", "2.5 Hours", 
@@ -172,11 +171,11 @@ const TaskBoard: React.FC<TaskBoardProps> = ({ role, staff }) => {
            </div>
         </div>
         <div className="flex flex-col sm:flex-row gap-3 w-full xl:w-auto">
-          <div className="relative flex-1 sm:w-64">
+          <div className="relative flex-1 sm:w-64 group">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-600" size={16} />
             <input 
               type="text" 
-              placeholder="Filter tasks..." 
+              placeholder="Filter by Job or Staff..." 
               className="w-full bg-zinc-900 border border-zinc-800 rounded-xl py-2.5 pl-10 pr-4 text-sm focus:border-amber-500 outline-none transition-all"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
@@ -188,7 +187,7 @@ const TaskBoard: React.FC<TaskBoardProps> = ({ role, staff }) => {
         </div>
       </div>
 
-      {/* Task List */}
+      {/* Task List Table View */}
       <div className="space-y-4">
         {isLoading ? (
           <div className="flex items-center justify-center py-24">
@@ -200,67 +199,101 @@ const TaskBoard: React.FC<TaskBoardProps> = ({ role, staff }) => {
             <p>No strategic tasks logged in the system.</p>
           </div>
         ) : (
-          filteredTasks.map((task) => (
-             <div key={task.id} className="bg-zinc-900 border border-zinc-800 rounded-[3rem] overflow-hidden transition-all duration-300 hover:border-amber-500/50">
-                <div 
-                  className="p-8 flex items-center justify-between cursor-pointer group" 
-                  onClick={() => toggleTaskExpansion(task.id)}
-                >
-                  <div className="flex items-center gap-6">
-                     <div className="w-12 h-12 rounded-2xl bg-zinc-950 flex items-center justify-center font-black text-amber-500 shadow-inner">{task.sn}</div>
-                     <div className="flex-1 max-w-xl">
-                        <h3 className="font-bold text-white group-hover:text-amber-500 transition-colors uppercase tracking-tight line-clamp-1">{task.role}</h3>
-                        <p className="text-[10px] text-zinc-500 font-bold uppercase tracking-widest flex items-center gap-2 mt-1">
-                          <UserCircle size={12} className="text-amber-500/50" /> {task.responsibleParty} | <Clock size={12} className="text-zinc-600" /> {task.smart.timeBound} | Due: {task.deadline}
-                        </p>
-                     </div>
-                  </div>
-                  <div className="flex items-center gap-4">
-                     <span className={`text-[9px] font-black px-4 py-1.5 rounded-full border ${
-                        task.skrc.status === 'Completed' ? 'border-emerald-500/30 text-emerald-500 bg-emerald-500/5' :
-                        task.skrc.status === 'Ongoing' ? 'border-blue-500/30 text-blue-500 bg-blue-500/5' :
-                        'border-amber-500/30 text-amber-500 bg-amber-500/5'
-                     }`}>
-                        {task.skrc.status.toUpperCase()}
-                     </span>
-                     {expandedTaskId === task.id ? <ChevronUp size={20} className="text-zinc-600" /> : <ChevronDown size={20} className="text-zinc-600" />}
-                  </div>
-                </div>
+          <div className="bg-zinc-900 border border-zinc-800 rounded-[2.5rem] overflow-hidden shadow-2xl">
+             <table className="w-full text-left border-collapse">
+                <thead className="bg-zinc-950 text-zinc-500 text-[10px] uppercase font-bold tracking-[0.2em]">
+                   <tr>
+                      <th className="px-8 py-6 w-16">SN</th>
+                      <th className="px-8 py-6">Job Description & Persistent Directive</th>
+                      <th className="px-8 py-6">Current Task / Identified Problem</th>
+                      <th className="px-8 py-6">Assignee</th>
+                      <th className="px-8 py-6 text-center">Status</th>
+                      <th className="px-8 py-6 text-right">Control</th>
+                   </tr>
+                </thead>
+                <tbody className="divide-y divide-zinc-800">
+                   {filteredTasks.map((task) => {
+                      const staffMember = staff.find(s => s.name === task.responsibleParty);
+                      const masterJD = staffMember?.jobDescription || task.role;
 
-                {expandedTaskId === task.id && (
-                  <div className="p-10 bg-zinc-950/40 border-t border-zinc-800 space-y-10 animate-in slide-in-from-top-4 duration-500">
-                    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
-                      {renderField("Job Description", task.role, <FileText size={12}/>, "col-span-2")}
-                      {renderField("Responsible Party", task.responsibleParty, <UserCircle size={12}/>)}
-                      {renderField("Deadline", task.deadline, <CalendarDays size={12}/>)}
-                    </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                       <div className="space-y-4">
-                          <h4 className="text-[10px] font-black text-amber-500 uppercase tracking-[0.2em] pb-2 border-b border-zinc-800">PRRR Analysis</h4>
-                          {renderField("Problem Identification", task.problem.description, <AlertCircle size={12}/>)}
-                          {renderField("Root Cause & Consequences", task.problem.rootCauseAndConsequences, <Layers size={12}/>)}
-                          {renderField("Risk Assessment", task.problem.risk, <ShieldAlert size={12}/>)}
-                       </div>
-                       <div className="space-y-4">
-                          <h4 className="text-[10px] font-black text-blue-500 uppercase tracking-[0.2em] pb-2 border-b border-zinc-800">SMART Strategy</h4>
-                          {renderField("Specific", task.smart.specific, <Target size={12}/>)}
-                          {renderField("Measurable", task.smart.measurable, <Activity size={12}/>)}
-                          {renderField("Time Bound", task.smart.timeBound, <Clock size={12}/>)}
-                          {renderField("Attainable / Relevance", `${task.smart.attainable} | ${task.smart.relevance}`, <Bookmark size={12}/>)}
-                       </div>
-                       <div className="space-y-4">
-                          <h4 className="text-[10px] font-black text-emerald-500 uppercase tracking-[0.2em] pb-2 border-b border-zinc-800">SKRC Tracking</h4>
-                          {renderField("Key Result", task.skrc.keyResult, <CheckSquare size={12}/>)}
-                          {renderField("Reflection", task.skrc.reflection, <Sparkles size={12}/>)}
-                          {renderField("Challenges", task.skrc.challenges, <AlertTriangle size={12}/>)}
-                          {renderField("Sup / Line Remarks", task.lineRemarks, <Settings2 size={12}/>)}
-                       </div>
-                    </div>
-                  </div>
-                )}
-             </div>
-          ))
+                      return (
+                        <React.Fragment key={task.id}>
+                           <tr 
+                             className={`hover:bg-zinc-800/30 transition-colors cursor-pointer group ${expandedTaskId === task.id ? 'bg-amber-500/5' : ''}`}
+                             onClick={() => toggleTaskExpansion(task.id)}
+                           >
+                              <td className="px-8 py-6">
+                                 <div className="w-8 h-8 rounded-lg bg-zinc-950 flex items-center justify-center font-black text-amber-500 shadow-inner text-[10px]">{task.sn}</div>
+                              </td>
+                              <td className="px-8 py-6">
+                                 <div className="max-w-xs xl:max-w-md">
+                                    <p className="text-xs font-bold text-white leading-relaxed line-clamp-2 uppercase tracking-tight">
+                                       {masterJD}
+                                    </p>
+                                    <p className="text-[9px] text-zinc-600 mt-1 font-black uppercase tracking-widest">Master Directive</p>
+                                 </div>
+                              </td>
+                              <td className="px-8 py-6">
+                                 <div className="max-w-xs xl:max-w-sm">
+                                    <p className="text-xs text-zinc-400 leading-relaxed italic line-clamp-2">
+                                       {task.problem.description || "Awaiting task specification..."}
+                                    </p>
+                                    <p className="text-[9px] text-amber-500/50 mt-1 font-black uppercase tracking-widest">Specific Objective</p>
+                                 </div>
+                              </td>
+                              <td className="px-8 py-6">
+                                 <div className="flex items-center gap-2">
+                                    <UserCircle size={14} className="text-amber-500" />
+                                    <span className="text-xs font-bold text-zinc-300">{task.responsibleParty}</span>
+                                 </div>
+                              </td>
+                              <td className="px-8 py-6 text-center">
+                                 <span className={`text-[9px] font-black px-4 py-1.5 rounded-full border ${
+                                    task.skrc.status === 'Completed' ? 'border-emerald-500/30 text-emerald-500 bg-emerald-500/5' :
+                                    task.skrc.status === 'Ongoing' ? 'border-blue-500/30 text-blue-500 bg-blue-500/5' :
+                                    'border-amber-500/30 text-amber-500 bg-amber-500/5'
+                                 }`}>
+                                    {task.skrc.status.toUpperCase()}
+                                 </span>
+                              </td>
+                              <td className="px-8 py-6 text-right">
+                                 {expandedTaskId === task.id ? <ChevronUp size={18} className="text-zinc-600 ml-auto" /> : <ChevronDown size={18} className="text-zinc-600 ml-auto" />}
+                              </td>
+                           </tr>
+                           {expandedTaskId === task.id && (
+                             <tr>
+                                <td colSpan={6} className="px-8 pb-12 pt-4 bg-zinc-950/40 animate-in slide-in-from-top-4 duration-500">
+                                   <div className="grid grid-cols-1 md:grid-cols-3 gap-12 border-t border-zinc-800/50 pt-8">
+                                      <div className="space-y-4">
+                                         <h4 className="text-[10px] font-black text-amber-500 uppercase tracking-[0.2em] pb-2 border-b border-zinc-800">PRRR Analysis</h4>
+                                         {renderField("Problem Identification", task.problem.description, <AlertCircle size={12}/>)}
+                                         {renderField("Root Cause & Consequences", task.problem.rootCauseAndConsequences, <Layers size={12}/>)}
+                                         {renderField("Risk Assessment", task.problem.risk, <ShieldAlert size={12}/>)}
+                                      </div>
+                                      <div className="space-y-4">
+                                         <h4 className="text-[10px] font-black text-blue-500 uppercase tracking-[0.2em] pb-2 border-b border-zinc-800">SMART Strategy</h4>
+                                         {renderField("Specific", task.smart.specific, <Target size={12}/>)}
+                                         {renderField("Measurable", task.smart.measurable, <Activity size={12}/>)}
+                                         {renderField("Time Bound", task.smart.timeBound, <Clock size={12}/>)}
+                                         {renderField("Attainable / Relevance", `${task.smart.attainable} | ${task.smart.relevance}`, <Bookmark size={12}/>)}
+                                      </div>
+                                      <div className="space-y-4">
+                                         <h4 className="text-[10px] font-black text-emerald-500 uppercase tracking-[0.2em] pb-2 border-b border-zinc-800">SKRC Tracking</h4>
+                                         {renderField("Key Result", task.skrc.keyResult, <CheckSquare size={12}/>)}
+                                         {renderField("Reflection", task.skrc.reflection, <Sparkles size={12}/>)}
+                                         {renderField("Challenges", task.skrc.challenges, <AlertTriangle size={12}/>)}
+                                         {renderField("Sup / Line Remarks", task.lineRemarks, <Settings2 size={12}/>)}
+                                      </div>
+                                   </div>
+                                </td>
+                             </tr>
+                           )}
+                        </React.Fragment>
+                      );
+                   })}
+                </tbody>
+             </table>
+          </div>
         )}
       </div>
 
