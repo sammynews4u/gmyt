@@ -12,7 +12,6 @@ export const storageService = {
 
   async setSyncKey(key: string) {
     localStorage.setItem('gmyt_sync_key', key);
-    // When a key is set, immediately pull from cloud to hydrate local DB
     return await this.pullFromCloud();
   },
 
@@ -30,11 +29,9 @@ export const storageService = {
       
       if (response.ok) {
         localStorage.setItem('gmyt_last_sync', new Date().toISOString());
-      } else {
-        console.error("Cloud push rejected by server");
       }
     } catch (e) {
-      console.warn("Cloud Sync Push Failed: Check DATABASE_URL in Vercel", e);
+      console.warn("Cloud Sync Push Failed", e);
     }
   },
 
@@ -47,7 +44,6 @@ export const storageService = {
       const result = await response.json();
       
       if (result.data) {
-        // Data in result.data is already an object (JSONB from CockroachDB)
         const success = await this.importDatabase(JSON.stringify(result.data));
         if (success) {
           localStorage.setItem('gmyt_last_sync', new Date().toISOString());
@@ -60,7 +56,6 @@ export const storageService = {
     return false;
   },
 
-  // DB Core
   async getDbStatus() {
     await networkDelay(100);
     const lastSync = localStorage.getItem('gmyt_last_sync');
@@ -103,8 +98,18 @@ export const storageService = {
     const users = await dbEngine.getAll<UserAccount>(STORES.USERS);
     if (users.length === 0) {
       const ceo = { id: 'u-ceo', name: 'Dr Princess Oghene', role: 'CEO' as const, username: 'ceo', password: 'password123' };
-      await dbEngine.put(STORES.USERS, ceo);
-      return [ceo];
+      const ictManager = { 
+        id: 'u-ict-1', 
+        name: 'SAMUEL OLUWATOSIN ADESANYA', 
+        role: 'Staff' as const, 
+        username: 'samuel.ict', 
+        password: 'password123',
+        position: 'ICT MANAGER',
+        department: 'ICT',
+        jobDescription: 'Oversee, manage and ensure full functionality of all ICT systems across the organization. The role cut across systems, infrastructure, platforms, data, contents, and technical support, and requires daily visibility and execution.'
+      };
+      await dbEngine.putBulk(STORES.USERS, [ceo, ictManager]);
+      return [ceo, ictManager];
     }
     return users;
   },

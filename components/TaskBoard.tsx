@@ -69,10 +69,23 @@ const TaskBoard: React.FC<TaskBoardProps> = ({ role, staff }) => {
     setTemplates(data);
   };
 
+  const handleStaffSelect = (staffName: string) => {
+    const member = staff.find(s => s.name === staffName);
+    if (member) {
+      setNewTask({
+        ...newTask,
+        responsibleParty: member.name,
+        role: member.jobDescription || newTask.role || ''
+      });
+    } else {
+      setNewTask({ ...newTask, responsibleParty: staffName });
+    }
+  };
+
   const handleAiGenerate = async () => {
     if (!newTask.role) return alert("Please specify the Job Description first so AI knows the context.");
     setIsAiGenerating(true);
-    const suggestion = await generateTaskSchema(newTask.role, "Optimal performance and corporate excellence");
+    const suggestion = await generateTaskSchema(newTask.role, "Optimal performance and corporate excellence based on the specific job description provided.");
     if (suggestion) {
       setNewTask({
         ...newTask,
@@ -195,8 +208,8 @@ const TaskBoard: React.FC<TaskBoardProps> = ({ role, staff }) => {
                 >
                   <div className="flex items-center gap-6">
                      <div className="w-12 h-12 rounded-2xl bg-zinc-950 flex items-center justify-center font-black text-amber-500 shadow-inner">{task.sn}</div>
-                     <div>
-                        <h3 className="font-bold text-white group-hover:text-amber-500 transition-colors uppercase tracking-tight">{task.role}</h3>
+                     <div className="flex-1 max-w-xl">
+                        <h3 className="font-bold text-white group-hover:text-amber-500 transition-colors uppercase tracking-tight line-clamp-1">{task.role}</h3>
                         <p className="text-[10px] text-zinc-500 font-bold uppercase tracking-widest flex items-center gap-2 mt-1">
                           <UserCircle size={12} className="text-amber-500/50" /> {task.responsibleParty} | <Clock size={12} className="text-zinc-600" /> {task.smart.timeBound} | Due: {task.deadline}
                         </p>
@@ -230,7 +243,7 @@ const TaskBoard: React.FC<TaskBoardProps> = ({ role, staff }) => {
                           {renderField("Risk Assessment", task.problem.risk, <ShieldAlert size={12}/>)}
                        </div>
                        <div className="space-y-4">
-                          <h4 className="text-[10px] font-black text-blue-500 uppercase tracking-[0.2em] pb-2 border-b border-zinc-800">SMART Execution</h4>
+                          <h4 className="text-[10px] font-black text-blue-500 uppercase tracking-[0.2em] pb-2 border-b border-zinc-800">SMART Strategy</h4>
                           {renderField("Specific", task.smart.specific, <Target size={12}/>)}
                           {renderField("Measurable", task.smart.measurable, <Activity size={12}/>)}
                           {renderField("Time Bound", task.smart.timeBound, <Clock size={12}/>)}
@@ -267,6 +280,17 @@ const TaskBoard: React.FC<TaskBoardProps> = ({ role, staff }) => {
              <div className="space-y-10">
                 {/* Core Header Fields */}
                 <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-end">
+                   <div className="md:col-span-3 space-y-2">
+                     <label className="text-[10px] font-black text-zinc-600 uppercase tracking-[0.2em] ml-1">Responsible Party</label>
+                     <select 
+                        className="w-full bg-zinc-900 border border-zinc-800 p-4 rounded-2xl text-sm focus:border-amber-500 outline-none font-bold text-white shadow-inner h-[62px]" 
+                        value={newTask.responsibleParty} 
+                        onChange={e => handleStaffSelect(e.target.value)}
+                      >
+                        <option value="">Select Assignee...</option>
+                        {staff.map(s => <option key={s.id} value={s.name}>{s.name} ({s.role})</option>)}
+                     </select>
+                   </div>
                    <div className="md:col-span-4 space-y-2">
                      <label className="text-[10px] font-black text-zinc-600 uppercase tracking-[0.2em] ml-1">Job Description (Objective)</label>
                      <textarea 
@@ -276,17 +300,6 @@ const TaskBoard: React.FC<TaskBoardProps> = ({ role, staff }) => {
                         value={newTask.role} 
                         onChange={e => setNewTask({...newTask, role: e.target.value})} 
                       />
-                   </div>
-                   <div className="md:col-span-3 space-y-2">
-                     <label className="text-[10px] font-black text-zinc-600 uppercase tracking-[0.2em] ml-1">Responsible Party</label>
-                     <select 
-                        className="w-full bg-zinc-900 border border-zinc-800 p-4 rounded-2xl text-sm focus:border-amber-500 outline-none font-bold text-white shadow-inner h-[62px]" 
-                        value={newTask.responsibleParty} 
-                        onChange={e => setNewTask({...newTask, responsibleParty: e.target.value})}
-                      >
-                        <option value="">Select Assignee...</option>
-                        {staff.map(s => <option key={s.id} value={s.name}>{s.name} ({s.role})</option>)}
-                     </select>
                    </div>
                    <div className="md:col-span-2 space-y-2">
                      <label className="text-[10px] font-black text-zinc-600 uppercase tracking-[0.2em] ml-1">Time Bound</label>

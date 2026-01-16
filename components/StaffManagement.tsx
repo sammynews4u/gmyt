@@ -5,7 +5,7 @@ import {
   Banknote, TrendingUp, UserMinus, ShieldCheck, 
   Loader2, MoreVertical, X, Save, ClipboardList,
   AlertCircle, ChevronRight, Contact, MapPin, CalendarDays, ShieldAlert,
-  Settings2
+  Settings2, FileText
 } from 'lucide-react';
 import { storageService } from '../services/storageService';
 import { UserAccount, UserRole, Paycheck } from '../types';
@@ -60,8 +60,8 @@ const StaffManagement: React.FC<StaffManagementProps> = ({ role }) => {
   };
 
   const handleFireStaff = async (id: string) => {
-    if (id === 'u-ceo') return alert("ACCESS DENIED: Root CEO accounts cannot be terminated via the management portal.");
-    if (confirm("CRITICAL: This will instantly revoke all system access for this employee. Continue with permanent termination?")) {
+    if (id === 'u-ceo') return alert("ACCESS DENIED: Root CEO accounts cannot be terminated.");
+    if (confirm("CRITICAL: Terminate employment and revoke all system access?")) {
       await storageService.deleteUser(id);
       await loadUsers();
       setSelectedStaff(null);
@@ -97,7 +97,7 @@ const StaffManagement: React.FC<StaffManagementProps> = ({ role }) => {
            <div>
               <h2 className="text-3xl font-black gold-text uppercase tracking-tight">Staff Corporate Directory</h2>
               <p className="text-sm text-zinc-500 font-bold uppercase tracking-widest flex items-center gap-2">
-                 IDENTITY MANAGEMENT & PAYROLL CONTROL
+                 IDENTITY MANAGEMENT & JOB DESCRIPTION CONTROL
                  {isCEO && <span className="text-emerald-500 flex items-center gap-1.5"><ShieldCheck size={16} /> CEO PRIVILEGE ACTIVE</span>}
               </p>
            </div>
@@ -145,7 +145,7 @@ const StaffManagement: React.FC<StaffManagementProps> = ({ role }) => {
             <div className="space-y-4 mb-10">
               <div className="flex items-center gap-4 text-[11px] text-zinc-400 font-bold uppercase tracking-widest">
                 <div className="w-8 h-8 rounded-xl bg-zinc-950 flex items-center justify-center text-amber-500 border border-zinc-800"><Briefcase size={14}/></div>
-                {user.title || 'UNASSIGNED ROLE'}
+                {user.position || user.title || 'UNASSIGNED ROLE'}
               </div>
               <div className="flex items-center gap-4 text-[11px] text-zinc-400 font-bold tracking-widest">
                 <div className="w-8 h-8 rounded-xl bg-zinc-950 flex items-center justify-center text-amber-500 border border-zinc-800"><Mail size={14}/></div>
@@ -165,20 +165,20 @@ const StaffManagement: React.FC<StaffManagementProps> = ({ role }) => {
                 onClick={() => { setSelectedStaff(user); setIsEditModalOpen(true); }}
                 className="flex items-center justify-center gap-3 py-3.5 bg-zinc-950 border border-zinc-800 text-zinc-400 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:text-white hover:border-zinc-600 transition-all"
               >
-                <ClipboardList size={16} /> History
+                <ClipboardList size={16} /> Task Sheet
               </button>
               <button 
                  onClick={() => { setSelectedStaff(user); setIsEditModalOpen(true); }}
                  className="flex items-center justify-center gap-3 py-3.5 bg-amber-500 text-black rounded-2xl text-[10px] font-black uppercase tracking-widest hover:shadow-[0_0_20px_rgba(245,158,11,0.3)] transition-all"
               >
-                <Settings2 size={16} /> Manage
+                <Settings2 size={16} /> Settings
               </button>
             </div>
           </div>
         ))}
       </div>
 
-      {/* Profile/Edit Modal with CEO Overrides */}
+      {/* Edit Modal */}
       {isEditModalOpen && selectedStaff && (
         <div className="fixed inset-0 z-[150] flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-black/95 backdrop-blur-md" onClick={() => setIsEditModalOpen(false)}></div>
@@ -197,10 +197,6 @@ const StaffManagement: React.FC<StaffManagementProps> = ({ role }) => {
                     <div className="w-1.5 h-1.5 rounded-full bg-zinc-800"></div>
                     <span className="text-xs font-bold text-zinc-500 uppercase tracking-widest">{selectedStaff.department || 'Core Operations'}</span>
                   </div>
-                  <div className="mt-4 flex gap-2">
-                    <div className="px-3 py-1 bg-emerald-500/10 text-emerald-500 text-[10px] font-black rounded-full border border-emerald-500/20">SYSTEM ACCESS GRANTED</div>
-                    {isCEO && <div className="px-3 py-1 bg-amber-500/10 text-amber-500 text-[10px] font-black rounded-full border border-amber-500/20 uppercase">CEO Override Active</div>}
-                  </div>
                 </div>
               </div>
               <button type="button" onClick={() => setIsEditModalOpen(false)} className="p-4 bg-zinc-900 border border-zinc-800 rounded-[2rem] text-zinc-500 hover:text-white transition-all"><X size={32}/></button>
@@ -208,28 +204,18 @@ const StaffManagement: React.FC<StaffManagementProps> = ({ role }) => {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
               <div className="space-y-8">
-                <h3 className="text-xs font-black text-amber-500 uppercase tracking-[0.4em] pb-3 border-b border-zinc-900">Corporate Post & Financials</h3>
+                <h3 className="text-xs font-black text-amber-500 uppercase tracking-[0.4em] pb-3 border-b border-zinc-900">Professional Identity</h3>
                 <div className="space-y-6">
                   <div className="space-y-2">
-                    <label className="text-[10px] font-black text-zinc-600 uppercase tracking-widest ml-1">Official Professional Title</label>
+                    <label className="text-[10px] font-black text-zinc-600 uppercase tracking-widest ml-1">Official Position</label>
                     <input 
                       className="w-full bg-zinc-900 border border-zinc-800 rounded-2xl py-4 px-6 text-sm focus:border-amber-500 outline-none font-bold text-white shadow-inner" 
-                      value={selectedStaff.title || ''} 
-                      onChange={e => setSelectedStaff({...selectedStaff, title: e.target.value})}
-                      placeholder="e.g. Lead Industrial Designer"
+                      value={selectedStaff.position || selectedStaff.title || ''} 
+                      onChange={e => setSelectedStaff({...selectedStaff, position: e.target.value})}
                     />
                   </div>
                   <div className="space-y-2">
-                    <label className="text-[10px] font-black text-zinc-600 uppercase tracking-widest ml-1">Gross Monthly Base (₦)</label>
-                    <input 
-                      type="number"
-                      className="w-full bg-zinc-900 border border-zinc-800 rounded-2xl py-4 px-6 text-sm focus:border-emerald-500 outline-none font-black text-emerald-500 shadow-inner" 
-                      value={selectedStaff.salary || ''} 
-                      onChange={e => setSelectedStaff({...selectedStaff, salary: Number(e.target.value)})}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <label className="text-[10px] font-black text-zinc-600 uppercase tracking-widest ml-1">Management Cluster</label>
+                    <label className="text-[10px] font-black text-zinc-600 uppercase tracking-widest ml-1">Management Cluster (Dept)</label>
                     <select 
                       className="w-full bg-zinc-900 border border-zinc-800 rounded-2xl py-4 px-6 text-sm focus:border-amber-500 outline-none font-bold text-white shadow-inner"
                       value={selectedStaff.department || ''}
@@ -241,43 +227,50 @@ const StaffManagement: React.FC<StaffManagementProps> = ({ role }) => {
                       ))}
                     </select>
                   </div>
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black text-zinc-600 uppercase tracking-widest ml-1">Monthly Emolument (₦)</label>
+                    <input 
+                      type="number"
+                      className="w-full bg-zinc-900 border border-zinc-800 rounded-2xl py-4 px-6 text-sm focus:border-emerald-500 outline-none font-black text-emerald-500 shadow-inner" 
+                      value={selectedStaff.salary || ''} 
+                      onChange={e => setSelectedStaff({...selectedStaff, salary: Number(e.target.value)})}
+                    />
+                  </div>
                 </div>
               </div>
 
               <div className="space-y-8">
-                <h3 className="text-xs font-black text-zinc-500 uppercase tracking-[0.4em] pb-3 border-b border-zinc-900">Communication & Protocol</h3>
+                <h3 className="text-xs font-black text-zinc-500 uppercase tracking-[0.4em] pb-3 border-b border-zinc-900">Master Job Description</h3>
                 <div className="space-y-6">
                   <div className="space-y-2">
-                    <label className="text-[10px] font-black text-zinc-600 uppercase tracking-widest ml-1">Primary Staff Email</label>
-                    <input 
-                      className="w-full bg-zinc-900 border border-zinc-800 rounded-2xl py-4 px-6 text-sm focus:border-amber-500 outline-none font-bold text-white shadow-inner" 
-                      value={selectedStaff.email || ''} 
-                      onChange={e => setSelectedStaff({...selectedStaff, email: e.target.value})}
+                    <label className="text-[10px] font-black text-amber-500 uppercase tracking-widest ml-1 flex items-center gap-2">
+                      <FileText size={12} /> Master Directive for Task Sheet
+                    </label>
+                    <textarea 
+                      rows={6}
+                      className="w-full bg-zinc-900 border border-zinc-800 rounded-2xl py-4 px-6 text-xs focus:border-amber-500 outline-none font-medium text-white shadow-inner resize-none leading-relaxed" 
+                      value={selectedStaff.jobDescription || ''} 
+                      onChange={e => setSelectedStaff({...selectedStaff, jobDescription: e.target.value})}
+                      placeholder="Specify the full corporate directive for this role..."
                     />
+                    <p className="text-[9px] text-zinc-600 uppercase font-bold italic">This description will auto-populate the staff member's weekly SMART task sheet.</p>
                   </div>
-                  <div className="space-y-2">
-                    <label className="text-[10px] font-black text-zinc-600 uppercase tracking-widest ml-1">Secure Contact Line</label>
-                    <input 
-                      className="w-full bg-zinc-900 border border-zinc-800 rounded-2xl py-4 px-6 text-sm focus:border-amber-500 outline-none font-bold text-white shadow-inner" 
-                      value={selectedStaff.phone || ''} 
-                      onChange={e => setSelectedStaff({...selectedStaff, phone: e.target.value})}
-                    />
-                  </div>
+                  
                   {isCEO && (
-                    <div className="pt-6 grid grid-cols-2 gap-4">
-                      <button 
+                    <div className="pt-4 flex flex-col gap-3">
+                       <button 
                         type="button"
                         onClick={() => handlePromote(selectedStaff)}
-                        className="flex items-center justify-center gap-3 py-4 bg-amber-500 text-black rounded-2xl text-[10px] font-black uppercase tracking-widest hover:scale-105 transition-all shadow-xl shadow-amber-500/20"
+                        className="w-full py-4 bg-amber-500 text-black rounded-2xl text-[10px] font-black uppercase tracking-widest hover:scale-105 transition-all"
                       >
-                        <TrendingUp size={20} /> Promote Staff
+                        Elevate Role Rank
                       </button>
                       <button 
                          type="button"
                          onClick={() => handleFireStaff(selectedStaff.id)}
-                         className="flex items-center justify-center gap-3 py-4 bg-rose-500/10 text-rose-500 border border-rose-500/20 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-rose-500 hover:text-white transition-all shadow-xl"
+                         className="w-full py-4 bg-rose-500/10 text-rose-500 border border-rose-500/20 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-rose-500 hover:text-white transition-all"
                       >
-                        <ShieldAlert size={20} /> Instant Terminate
+                        Terminate Employment
                       </button>
                     </div>
                   )}
@@ -289,16 +282,16 @@ const StaffManagement: React.FC<StaffManagementProps> = ({ role }) => {
                <button 
                  type="submit" 
                  disabled={isSyncing}
-                 className="flex-1 py-6 gold-gradient text-black font-black rounded-[2.5rem] flex items-center justify-center gap-4 shadow-2xl shadow-amber-500/20 hover:scale-[1.02] transition-all disabled:opacity-50"
+                 className="flex-1 py-6 gold-gradient text-black font-black rounded-[2.5rem] flex items-center justify-center gap-4 shadow-2xl hover:scale-[1.02] transition-all disabled:opacity-50"
                >
-                 {isSyncing ? <Loader2 className="animate-spin" size={24} /> : <><Save size={24} /> Sync All Profile Changes</>}
+                 {isSyncing ? <Loader2 className="animate-spin" size={24} /> : <><Save size={24} /> Sync Corporate Record</>}
                </button>
                <button 
                  type="button"
                  onClick={() => setIsEditModalOpen(false)}
-                 className="px-16 py-6 bg-zinc-900 border border-zinc-800 text-zinc-500 font-black rounded-[2.5rem] uppercase text-[10px] tracking-widest hover:text-white transition-all"
+                 className="px-16 py-6 bg-zinc-900 text-zinc-500 font-black rounded-[2.5rem] uppercase text-[10px] tracking-widest hover:text-white transition-all"
                >
-                 Cancel
+                 Discard Changes
                </button>
             </div>
           </form>

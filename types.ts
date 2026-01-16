@@ -16,6 +16,7 @@ export interface UserAccount {
   phone?: string;
   salary?: number;
   department?: string;
+  jobDescription?: string; // Persistent Job Description for Task Sheet
   joinDate?: string;
   status?: 'Active' | 'Suspended' | 'Terminated';
 }
@@ -42,7 +43,7 @@ export interface AttendanceRecord {
 export interface Task {
   id: string;
   sn: number;
-  role: string; // Job Description
+  role: string; // Job Description / Core Objective
   problem: {
     description: string; // Problem Identification
     rootCauseAndConsequences: string; // Root Cause & Consequences
