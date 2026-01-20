@@ -147,9 +147,9 @@ const App: React.FC = () => {
       case 'attendance': return <AttendanceRegister user={currentUser} />;
       case 'staff-management': return <StaffManagement role={currentRole} />;
       case 'hiring': return <HiringPortal role={currentRole} onStartInterview={(name) => startMeeting(`Interview: ${name}`, 'Interview')} />;
-      case 'tasks': return <TaskBoard role={currentRole} staff={systemStaff} />;
+      case 'tasks': return <TaskBoard user={currentUser} staff={systemStaff} />;
       case 'onboarding': return <OnboardingPortal role={currentRole} staff={systemStaff} />;
-      case 'inventory': return <InventorySystem />;
+      case 'inventory': return <InventorySystem user={currentUser} />;
       case 'expenses': return <ExpenseSheet />;
       case 'payroll': return <PayrollSystem role={currentRole} />;
       case 'performance': return <PerformanceMetrics />;

@@ -15,22 +15,24 @@ import { storageService } from '../services/storageService';
 import { generateTaskSchema } from '../services/geminiService';
 
 interface TaskBoardProps {
-  role: UserRole;
+  user: UserAccount;
   staff: UserAccount[];
 }
 
-const TaskBoard: React.FC<TaskBoardProps> = ({ role, staff }) => {
+const TaskBoard: React.FC<TaskBoardProps> = ({ user, staff }) => {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [templates, setTemplates] = useState<TaskTemplate[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isAiGenerating, setIsAiGenerating] = useState(false);
+  const [isUpdatingTask, setIsUpdatingTask] = useState<string | null>(null);
   const [search, setSearch] = useState('');
   const [sortField, setSortField] = useState<'priority' | 'deadline' | 'sn'>('sn');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [expandedTaskId, setExpandedTaskId] = useState<string | null>(null);
 
-  const isCEO = role === 'CEO';
+  const isCEO = user.role === 'CEO';
+  const isManagement = isCEO || user.role === 'Project Manager';
 
   const TIME_BOUND_OPTIONS = [
     "30 Minutes", "1 Hour", "1.5 Hours", "2 Hours", "2.5 Hours", 
@@ -48,7 +50,7 @@ const TaskBoard: React.FC<TaskBoardProps> = ({ role, staff }) => {
     deadline: new Date().toISOString().split('T')[0],
     priority: 3,
     comments: [],
-    addedBy: role
+    addedBy: user.role
   };
 
   const [newTask, setNewTask] = useState<Partial<Task>>(initialTaskState);
@@ -117,16 +119,46 @@ const TaskBoard: React.FC<TaskBoardProps> = ({ role, staff }) => {
       skrc: {
         ...initialTaskState.skrc!,
         ...newTask.skrc,
-        status: (role === 'Staff' || role === 'Accountant') ? 'Awaiting Approval' : 'Pending',
+        status: (user.role === 'Staff' || user.role === 'Accountant') ? 'Awaiting Approval' : 'Pending',
       },
       comments: [],
-      addedBy: role
+      addedBy: user.role
     } as Task;
 
     await storageService.saveTask(taskToAdd);
     await loadTasks();
     setIsModalOpen(false);
     setNewTask(initialTaskState);
+  };
+
+  const handleStartTask = async (task: Task) => {
+    setIsUpdatingTask(task.id);
+    const updatedTask: Task = {
+      ...task,
+      skrc: { ...task.skrc, isStarted: true, status: 'Ongoing' }
+    };
+    await storageService.saveTask(updatedTask);
+    const updatedTasks = tasks.map(t => t.id === task.id ? updatedTask : t);
+    setTasks(updatedTasks);
+    setIsUpdatingTask(null);
+  };
+
+  const handleCompleteTask = async (task: Task) => {
+    setIsUpdatingTask(task.id);
+    const updatedTask: Task = {
+      ...task,
+      skrc: { ...task.skrc, status: 'Completed' }
+    };
+    await storageService.saveTask(updatedTask);
+    const updatedTasks = tasks.map(t => t.id === task.id ? updatedTask : t);
+    setTasks(updatedTasks);
+    setIsUpdatingTask(null);
+  };
+
+  const handleDeleteTask = async (id: string) => {
+    if (!confirm("Permanently delete this strategic entry?")) return;
+    await storageService.deleteTask(id);
+    setTasks(tasks.filter(t => t.id !== id));
   };
 
   const toggleTaskExpansion = (id: string) => {
@@ -147,7 +179,7 @@ const TaskBoard: React.FC<TaskBoardProps> = ({ role, staff }) => {
     });
 
   const renderLargeTextBox = (title: string, content: string, color: string = "amber", icon?: React.ReactNode) => (
-    <div className={`p-5 bg-zinc-950 border border-zinc-800 rounded-3xl space-y-3 h-full`}>
+    <div className={`p-5 bg-zinc-950 border border-zinc-800 rounded-3xl space-y-3 h-full shadow-inner`}>
        <div className="flex items-center gap-2 mb-1">
           {icon && <div className={`text-${color}-500`}>{icon}</div>}
           <span className={`text-[10px] font-black text-zinc-500 uppercase tracking-[0.2em]`}>{title}</span>
@@ -185,7 +217,7 @@ const TaskBoard: React.FC<TaskBoardProps> = ({ role, staff }) => {
               onChange={(e) => setSearch(e.target.value)}
             />
           </div>
-          <button onClick={() => setIsModalOpen(true)} className="px-6 py-2.5 gold-gradient rounded-xl font-black text-black text-xs uppercase tracking-widest flex items-center gap-2 hover:scale-105 transition-all">
+          <button onClick={() => setIsModalOpen(true)} className="px-6 py-2.5 gold-gradient rounded-xl font-black text-black text-xs uppercase tracking-widest flex items-center gap-2 hover:scale-105 transition-all shadow-lg shadow-amber-500/20">
             <Plus size={18} /> Deploy New Strategy
           </button>
         </div>
@@ -218,6 +250,8 @@ const TaskBoard: React.FC<TaskBoardProps> = ({ role, staff }) => {
                    {filteredTasks.map((task) => {
                       const staffMember = staff.find(s => s.name === task.responsibleParty);
                       const masterJD = staffMember?.jobDescription || task.role;
+                      const isAssignedToMe = user.name === task.responsibleParty;
+                      const canControl = isAssignedToMe || isManagement;
 
                       return (
                         <React.Fragment key={task.id}>
@@ -232,57 +266,119 @@ const TaskBoard: React.FC<TaskBoardProps> = ({ role, staff }) => {
                                  {renderLargeTextBox("Directive Anchor", masterJD, "amber", <ShieldCheck size={10} />)}
                                  <div className="mt-4 flex items-center gap-2 px-4">
                                     <div className="p-1 bg-amber-500/10 rounded-lg"><UserCircle size={12} className="text-amber-500" /></div>
-                                    <span className="text-[10px] font-black text-zinc-300 uppercase tracking-widest">{task.responsibleParty}</span>
+                                    <span className={`text-[10px] font-black uppercase tracking-widest ${isAssignedToMe ? 'text-amber-500' : 'text-zinc-300'}`}>
+                                       {task.responsibleParty} {isAssignedToMe && '(YOU)'}
+                                    </span>
                                  </div>
                               </td>
                               <td className="px-8 py-6 border-r border-zinc-800/50 align-top">
                                  {renderLargeTextBox("Daily Execution Node", task.tasksForToday, "blue", <ListChecks size={10} />)}
+                                 {/* Inline Status Badge */}
+                                 <div className="mt-3 flex gap-2">
+                                    <span className={`text-[8px] font-black px-2 py-1 rounded-full border ${task.skrc.status === 'Completed' ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-500' : task.skrc.status === 'Ongoing' ? 'bg-blue-500/10 border-blue-500/30 text-blue-500' : 'bg-amber-500/10 border-amber-500/30 text-amber-500'}`}>
+                                       {task.skrc.status.toUpperCase()}
+                                    </span>
+                                 </div>
                               </td>
                               <td className="px-8 py-6 align-top">
                                  {/* Large Analysis Table Grid */}
                                  <div className="grid grid-cols-3 gap-3 h-full min-h-[160px]">
                                     {renderLargeTextBox("PRRR Analysis", task.problem.description, "amber", <AlertTriangle size={10} />)}
                                     {renderLargeTextBox("SMART Goal", task.smart.specific, "blue", <Target size={10} />)}
-                                    {renderLargeTextBox("SKRC Result", task.skrc.keyResult, "emerald", <CheckSquare size={10} />)}
+                                    {renderLargeTextBox("SKRC Result", task.skrc.keyResult || 'Awaiting Input...', "emerald", <CheckSquare size={10} />)}
                                  </div>
                               </td>
                               <td className="px-8 py-6 text-right align-top pt-8">
-                                 {expandedTaskId === task.id ? <ChevronUp size={20} className="text-amber-500" /> : <ChevronDown size={20} className="text-zinc-600" />}
+                                 <div className="flex flex-col items-end gap-2">
+                                    {expandedTaskId === task.id ? <ChevronUp size={20} className="text-amber-500" /> : <ChevronDown size={20} className="text-zinc-600" />}
+                                 </div>
                               </td>
                            </tr>
                            {expandedTaskId === task.id && (
                              <tr>
                                 <td colSpan={5} className="px-8 pb-12 pt-4 bg-zinc-950/80 animate-in slide-in-from-top-4 duration-500 border-x border-zinc-800">
-                                   <div className="grid grid-cols-1 md:grid-cols-3 gap-6 border-t border-zinc-800/50 pt-8">
-                                      <div className="space-y-4">
-                                         <h4 className="text-[10px] font-black text-amber-500 uppercase tracking-[0.2em] pb-2 border-b border-zinc-800 flex items-center gap-2">
-                                            <AlertTriangle size={12}/> PRRR DEPTH ANALYSIS
-                                         </h4>
-                                         <div className="grid grid-cols-1 gap-4">
-                                            {renderLargeTextBox("Root Cause & Consequences", task.problem.rootCauseAndConsequences, "amber", <Layers size={10}/>)}
-                                            {renderLargeTextBox("Strategic Risk Assessment", task.problem.risk, "amber", <ShieldAlert size={10}/>)}
-                                         </div>
-                                      </div>
-                                      <div className="space-y-4">
-                                         <h4 className="text-[10px] font-black text-blue-500 uppercase tracking-[0.2em] pb-2 border-b border-zinc-800 flex items-center gap-2">
-                                            <Target size={12}/> SMART ARCHITECTURE
-                                         </h4>
-                                         <div className="grid grid-cols-1 gap-4">
-                                            {renderLargeTextBox("KPI / Measurable Metrics", task.smart.measurable, "blue", <Activity size={10}/>)}
-                                            <div className="grid grid-cols-2 gap-4">
-                                               {renderLargeTextBox("Time Bound", task.smart.timeBound, "blue", <Clock size={10}/>)}
-                                               {renderLargeTextBox("Strategy Relevance", task.smart.relevance, "blue", <Bookmark size={10}/>)}
+                                   <div className="space-y-8">
+                                      {/* Execution Hub for Staff */}
+                                      <div className="bg-zinc-900/50 border border-zinc-800 rounded-3xl p-6 flex flex-col md:flex-row items-center justify-between gap-6">
+                                         <div className="flex items-center gap-4">
+                                            <div className="p-3 bg-amber-500/10 rounded-2xl">
+                                               <Zap className="text-amber-500" size={24} />
+                                            </div>
+                                            <div>
+                                               <h4 className="text-xs font-black text-white uppercase tracking-widest">Live Execution Hub</h4>
+                                               <p className="text-[10px] text-zinc-500 uppercase tracking-widest mt-1">Status: <span className="text-amber-500">{task.skrc.status}</span></p>
                                             </div>
                                          </div>
+                                         <div className="flex gap-4">
+                                            {canControl && (
+                                              <>
+                                                {!task.skrc.isStarted ? (
+                                                   <button 
+                                                      onClick={(e) => { e.stopPropagation(); handleStartTask(task); }}
+                                                      disabled={isUpdatingTask === task.id}
+                                                      className="px-8 py-3 bg-blue-600 text-white font-black rounded-xl text-[10px] uppercase tracking-[0.2em] flex items-center gap-2 hover:bg-blue-500 transition-all shadow-lg shadow-blue-600/20 disabled:opacity-50"
+                                                   >
+                                                      {isUpdatingTask === task.id ? <Loader2 className="animate-spin" size={14} /> : <Play size={14} />}
+                                                      Start Task Node
+                                                   </button>
+                                                ) : task.skrc.status !== 'Completed' ? (
+                                                   <button 
+                                                      onClick={(e) => { e.stopPropagation(); handleCompleteTask(task); }}
+                                                      disabled={isUpdatingTask === task.id}
+                                                      className="px-8 py-3 bg-emerald-600 text-white font-black rounded-xl text-[10px] uppercase tracking-[0.2em] flex items-center gap-2 hover:bg-emerald-500 transition-all shadow-lg shadow-emerald-600/20 disabled:opacity-50"
+                                                   >
+                                                      {isUpdatingTask === task.id ? <Loader2 className="animate-spin" size={14} /> : <CheckCircle size={14} />}
+                                                      Commit as DONE
+                                                   </button>
+                                                ) : (
+                                                   <div className="px-8 py-3 bg-emerald-500/10 border border-emerald-500/30 text-emerald-500 font-black rounded-xl text-[10px] uppercase tracking-[0.2em] flex items-center gap-2">
+                                                      <ShieldCheck size={14} /> Mission Accomplished
+                                                   </div>
+                                                )}
+                                              </>
+                                            )}
+                                            {isManagement && (
+                                               <button 
+                                                  onClick={(e) => { e.stopPropagation(); handleDeleteTask(task.id); }}
+                                                  className="p-3 bg-rose-500/10 text-rose-500 border border-rose-500/20 rounded-xl hover:bg-rose-500 hover:text-white transition-all"
+                                               >
+                                                  <Trash2 size={18} />
+                                               </button>
+                                            )}
+                                         </div>
                                       </div>
-                                      <div className="space-y-4">
-                                         <h4 className="text-[10px] font-black text-emerald-500 uppercase tracking-[0.2em] pb-2 border-b border-zinc-800 flex items-center gap-2">
-                                            <Sparkles size={12}/> SKRC REFLECTION HUB
-                                         </h4>
-                                         <div className="grid grid-cols-1 gap-4">
-                                            {renderLargeTextBox("Management Impact Note", task.skrc.reflection, "emerald", <Sparkles size={10}/>)}
-                                            {renderLargeTextBox("Deployment Challenges", task.skrc.challenges, "emerald", <AlertTriangle size={10}/>)}
-                                            {renderLargeTextBox("CEO Override Remarks", task.lineRemarks, "amber", <Settings2 size={10}/>)}
+
+                                      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 border-t border-zinc-800/50 pt-8">
+                                         <div className="space-y-4">
+                                            <h4 className="text-[10px] font-black text-amber-500 uppercase tracking-[0.2em] pb-2 border-b border-zinc-800 flex items-center gap-2">
+                                               <AlertTriangle size={12}/> PRRR DEPTH ANALYSIS
+                                            </h4>
+                                            <div className="grid grid-cols-1 gap-4">
+                                               {renderLargeTextBox("Root Cause & Consequences", task.problem.rootCauseAndConsequences, "amber", <Layers size={10}/>)}
+                                               {renderLargeTextBox("Strategic Risk Assessment", task.problem.risk, "amber", <ShieldAlert size={10}/>)}
+                                            </div>
+                                         </div>
+                                         <div className="space-y-4">
+                                            <h4 className="text-[10px] font-black text-blue-500 uppercase tracking-[0.2em] pb-2 border-b border-zinc-800 flex items-center gap-2">
+                                               <Target size={12}/> SMART ARCHITECTURE
+                                            </h4>
+                                            <div className="grid grid-cols-1 gap-4">
+                                               {renderLargeTextBox("KPI / Measurable Metrics", task.smart.measurable, "blue", <Activity size={10}/>)}
+                                               <div className="grid grid-cols-2 gap-4">
+                                                  {renderLargeTextBox("Time Bound", task.smart.timeBound, "blue", <Clock size={10}/>)}
+                                                  {renderLargeTextBox("Strategy Relevance", task.smart.relevance, "blue", <Bookmark size={10}/>)}
+                                               </div>
+                                            </div>
+                                         </div>
+                                         <div className="space-y-4">
+                                            <h4 className="text-[10px] font-black text-emerald-500 uppercase tracking-[0.2em] pb-2 border-b border-zinc-800 flex items-center gap-2">
+                                               <Sparkles size={12}/> SKRC REFLECTION HUB
+                                            </h4>
+                                            <div className="grid grid-cols-1 gap-4">
+                                               {renderLargeTextBox("Management Impact Note", task.skrc.reflection, "emerald", <Sparkles size={10}/>)}
+                                               {renderLargeTextBox("Deployment Challenges", task.skrc.challenges, "emerald", <AlertTriangle size={10}/>)}
+                                               {renderLargeTextBox("CEO Override Remarks", task.lineRemarks, "amber", <Settings2 size={10}/>)}
+                                            </div>
                                          </div>
                                       </div>
                                    </div>
