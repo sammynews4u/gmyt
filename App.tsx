@@ -142,14 +142,17 @@ const App: React.FC = () => {
   const filteredMenu = menuItems.filter(item => item.roles.includes(currentRole));
 
   const renderContent = () => {
+    // Inside this block, we know currentUser is not null because of the early return above.
+    const user = currentUser!;
+    
     switch (activeTab) {
       case 'dashboard': return <Dashboard role={currentRole} />;
-      case 'attendance': return <AttendanceRegister user={currentUser} />;
+      case 'attendance': return <AttendanceRegister user={user} />;
       case 'staff-management': return <StaffManagement role={currentRole} />;
       case 'hiring': return <HiringPortal role={currentRole} onStartInterview={(name) => startMeeting(`Interview: ${name}`, 'Interview')} />;
-      case 'tasks': return <TaskBoard user={currentUser} staff={systemStaff} />;
+      case 'tasks': return <TaskBoard user={user} staff={systemStaff} />;
       case 'onboarding': return <OnboardingPortal role={currentRole} staff={systemStaff} />;
-      case 'inventory': return <InventorySystem user={currentUser} />;
+      case 'inventory': return <InventorySystem user={user} />;
       case 'expenses': return <ExpenseSheet />;
       case 'payroll': return <PayrollSystem role={currentRole} />;
       case 'performance': return <PerformanceMetrics />;

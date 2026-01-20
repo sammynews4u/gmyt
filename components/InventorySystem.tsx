@@ -18,7 +18,7 @@ const DEFAULT_INVENTORY: InventoryItem[] = [
   { id: '2', product: 'Industrial Sewing Machines', quantity: 15, in: 0, out: 2, balance: 13, reorderLevel: 5, responsibleParty: 'Mr Fatai', date: '2025-12-01' },
 ];
 
-const InventorySystem: React.FC<InventorySystemProps> = ({ user }) => {
+export default function InventorySystem({ user }: InventorySystemProps) {
   const [items, setItems] = useState<InventoryItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -120,7 +120,6 @@ const InventorySystem: React.FC<InventorySystemProps> = ({ user }) => {
 
   return (
     <div className="space-y-6 relative pb-24">
-      {/* Header Controls */}
       <div className="flex flex-col xl:flex-row gap-4 justify-between items-start xl:items-center">
         <div className="flex items-center gap-4">
            <div className="p-3 bg-amber-500/10 rounded-2xl">
@@ -156,7 +155,6 @@ const InventorySystem: React.FC<InventorySystemProps> = ({ user }) => {
         </div>
       </div>
 
-      {/* Main Ledger Grid */}
       <div className="bg-zinc-900 border border-zinc-800 rounded-[2.5rem] overflow-hidden shadow-2xl">
          <table className="w-full text-left border-collapse">
             <thead className="bg-zinc-950 text-zinc-500 text-[10px] uppercase font-bold tracking-[0.2em]">
@@ -217,7 +215,6 @@ const InventorySystem: React.FC<InventorySystemProps> = ({ user }) => {
          </table>
       </div>
 
-      {/* Asset Deployment Modal */}
       {isModalOpen && (
         <div className="fixed inset-0 z-[150] flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-black/95 backdrop-blur-md" onClick={() => setIsModalOpen(false)}></div>
@@ -304,6 +301,4 @@ const InventorySystem: React.FC<InventorySystemProps> = ({ user }) => {
       )}
     </div>
   );
-};
-
-export default InventorySystem;
+}

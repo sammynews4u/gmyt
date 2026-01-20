@@ -19,7 +19,7 @@ interface TaskBoardProps {
   staff: UserAccount[];
 }
 
-const TaskBoard: React.FC<TaskBoardProps> = ({ user, staff }) => {
+export default function TaskBoard({ user, staff }: TaskBoardProps) {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [templates, setTemplates] = useState<TaskTemplate[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -192,7 +192,6 @@ const TaskBoard: React.FC<TaskBoardProps> = ({ user, staff }) => {
 
   return (
     <div className="space-y-6 relative pb-24">
-      {/* Header Controls */}
       <div className="flex flex-col xl:flex-row gap-4 justify-between items-start xl:items-center">
         <div className="flex items-center gap-4">
            <div className="p-3 bg-amber-500/10 rounded-2xl">
@@ -223,7 +222,6 @@ const TaskBoard: React.FC<TaskBoardProps> = ({ user, staff }) => {
         </div>
       </div>
 
-      {/* Main Strategic Task Table */}
       <div className="space-y-4">
         {isLoading ? (
           <div className="flex items-center justify-center py-24">
@@ -273,7 +271,6 @@ const TaskBoard: React.FC<TaskBoardProps> = ({ user, staff }) => {
                               </td>
                               <td className="px-8 py-6 border-r border-zinc-800/50 align-top">
                                  {renderLargeTextBox("Daily Execution Node", task.tasksForToday, "blue", <ListChecks size={10} />)}
-                                 {/* Inline Status Badge */}
                                  <div className="mt-3 flex gap-2">
                                     <span className={`text-[8px] font-black px-2 py-1 rounded-full border ${task.skrc.status === 'Completed' ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-500' : task.skrc.status === 'Ongoing' ? 'bg-blue-500/10 border-blue-500/30 text-blue-500' : 'bg-amber-500/10 border-amber-500/30 text-amber-500'}`}>
                                        {task.skrc.status.toUpperCase()}
@@ -281,7 +278,6 @@ const TaskBoard: React.FC<TaskBoardProps> = ({ user, staff }) => {
                                  </div>
                               </td>
                               <td className="px-8 py-6 align-top">
-                                 {/* Large Analysis Table Grid */}
                                  <div className="grid grid-cols-3 gap-3 h-full min-h-[160px]">
                                     {renderLargeTextBox("PRRR Analysis", task.problem.description, "amber", <AlertTriangle size={10} />)}
                                     {renderLargeTextBox("SMART Goal", task.smart.specific, "blue", <Target size={10} />)}
@@ -298,7 +294,6 @@ const TaskBoard: React.FC<TaskBoardProps> = ({ user, staff }) => {
                              <tr>
                                 <td colSpan={5} className="px-8 pb-12 pt-4 bg-zinc-950/80 animate-in slide-in-from-top-4 duration-500 border-x border-zinc-800">
                                    <div className="space-y-8">
-                                      {/* Execution Hub for Staff */}
                                       <div className="bg-zinc-900/50 border border-zinc-800 rounded-3xl p-6 flex flex-col md:flex-row items-center justify-between gap-6">
                                          <div className="flex items-center gap-4">
                                             <div className="p-3 bg-amber-500/10 rounded-2xl">
@@ -394,7 +389,6 @@ const TaskBoard: React.FC<TaskBoardProps> = ({ user, staff }) => {
         )}
       </div>
 
-      {/* Strategic Entry Deployment Modal */}
       {isModalOpen && (
         <div className="fixed inset-0 z-[150] flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-black/95 backdrop-blur-md" onClick={() => setIsModalOpen(false)}></div>
@@ -413,7 +407,6 @@ const TaskBoard: React.FC<TaskBoardProps> = ({ user, staff }) => {
              </div>
              
              <div className="space-y-12">
-                {/* Section 1: Strategic Anchor */}
                 <div className="bg-zinc-900/40 border border-zinc-800 rounded-[2.5rem] p-8 space-y-8">
                    <div className="flex items-center gap-3">
                       <div className="w-2 h-2 rounded-full bg-amber-500 animate-pulse"></div>
@@ -447,7 +440,6 @@ const TaskBoard: React.FC<TaskBoardProps> = ({ user, staff }) => {
                       </div>
                    </div>
 
-                   {/* NEW: Tasks For Today Input Box */}
                    <div className="space-y-3">
                       <label className="text-[11px] font-black text-white uppercase tracking-[0.2em] flex items-center gap-2">
                         <ListChecks size={14} className="text-blue-500" /> TASKS FOR TODAY (Numbered Checklist)
@@ -462,7 +454,6 @@ const TaskBoard: React.FC<TaskBoardProps> = ({ user, staff }) => {
                    </div>
                 </div>
 
-                {/* Section 2: TASKS Analysis Table Structure */}
                 <div className="space-y-8">
                    <div className="flex items-center justify-between">
                       <div className="flex items-center gap-3">
@@ -480,7 +471,6 @@ const TaskBoard: React.FC<TaskBoardProps> = ({ user, staff }) => {
                    </div>
 
                    <div className="grid grid-cols-1 md:grid-cols-3 gap-10">
-                      {/* Sub-Column 1: PRRR Analysis */}
                       <div className="bg-amber-500/5 border border-amber-500/10 p-8 rounded-[3rem] space-y-6">
                          <div className="flex items-center gap-3 border-l-4 border-amber-500 pl-4 py-1">
                             <h5 className="text-[11px] font-black text-amber-500 uppercase tracking-widest">PRRR Identification</h5>
@@ -501,7 +491,6 @@ const TaskBoard: React.FC<TaskBoardProps> = ({ user, staff }) => {
                          </div>
                       </div>
 
-                      {/* Sub-Column 2: SMART Architecture */}
                       <div className="bg-blue-500/5 border border-blue-500/10 p-8 rounded-[3rem] space-y-6">
                          <div className="flex items-center gap-3 border-l-4 border-blue-500 pl-4 py-1">
                             <h5 className="text-[11px] font-black text-blue-500 uppercase tracking-widest">SMART Architecture</h5>
@@ -538,7 +527,6 @@ const TaskBoard: React.FC<TaskBoardProps> = ({ user, staff }) => {
                          </div>
                       </div>
 
-                      {/* Sub-Column 3: SKRC Tracking */}
                       <div className="bg-emerald-500/5 border border-emerald-500/10 p-8 rounded-[3rem] space-y-6">
                          <div className="flex items-center gap-3 border-l-4 border-emerald-500 pl-4 py-1">
                             <h5 className="text-[11px] font-black text-emerald-500 uppercase tracking-widest">SKRC Tracking</h5>
@@ -565,7 +553,6 @@ const TaskBoard: React.FC<TaskBoardProps> = ({ user, staff }) => {
                    </div>
                 </div>
 
-                {/* Modal Footer Deployment Controls */}
                 <div className="pt-12 border-t border-zinc-900 flex flex-col sm:flex-row gap-6">
                    <button onClick={handleCreateTask} className="flex-1 py-7 gold-gradient text-black font-black rounded-[2.5rem] shadow-2xl shadow-amber-500/20 hover:scale-[1.02] active:scale-95 transition-all uppercase tracking-[0.2em] text-sm flex items-center justify-center gap-3">
                       <Zap size={20} /> Deploy Strategic Entry
@@ -580,6 +567,4 @@ const TaskBoard: React.FC<TaskBoardProps> = ({ user, staff }) => {
       )}
     </div>
   );
-};
-
-export default TaskBoard;
+}
