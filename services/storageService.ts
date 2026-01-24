@@ -185,6 +185,19 @@ export const storageService = {
   async getPasswordRequests(): Promise<PasswordChangeRequest[]> {
     return dbEngine.getAll<PasswordChangeRequest>(STORES.PASSWORD_REQUESTS);
   },
+  async createPasswordRequest(request: PasswordChangeRequest) {
+    await dbEngine.put(STORES.PASSWORD_REQUESTS, request);
+    await this.pushToCloud();
+  },
+  async processPasswordRequest(id: string, status: 'Approved' | 'Rejected') {
+    const requests = await this.getPasswordRequests();
+    const req = requests.find(r => r.id === id);
+    if (req) {
+      req.status = status;
+      await dbEngine.put(STORES.PASSWORD_REQUESTS, req);
+      await this.pushToCloud();
+    }
+  },
 
   // Onboarding
   async getOnboardingDocs(): Promise<OnboardingRecord[]> { return dbEngine.getAll<OnboardingRecord>(STORES.ONBOARDING); },
