@@ -8,9 +8,9 @@ import {
   ClipboardList, Settings2, Sparkles, Wand2, UserCircle,
   Zap, Cpu, ListChecks, FileInput, Send, Printer, MessageSquare,
   FileText, AlertCircle, Eye, ThumbsUp, RotateCcw,
-  Target as TargetIcon, ArrowRight, Info
+  Target as TargetIcon, ArrowRight, Info, BarChart
 } from 'lucide-react';
-import { Task, UserAccount } from '../types';
+import { Task, UserAccount, TaskStatus } from '../types';
 import { storageService } from '../services/storageService';
 import { generateTaskSchema } from '../services/geminiService';
 
@@ -227,6 +227,28 @@ export default function TaskBoard({ user, staff }: TaskBoardProps) {
     window.print();
   };
 
+  const getStatusProgress = (status: TaskStatus) => {
+    switch (status) {
+      case 'Pending': return 0;
+      case 'Ongoing': return 50;
+      case 'Awaiting Approval': return 75;
+      case 'Completed': return 100;
+      case 'Delayed': return 30; // Custom addition for context
+      default: return 0;
+    }
+  };
+
+  const getStatusColor = (status: TaskStatus) => {
+    switch (status) {
+      case 'Pending': return 'amber';
+      case 'Ongoing': return 'blue';
+      case 'Awaiting Approval': return 'indigo';
+      case 'Completed': return 'emerald';
+      case 'Delayed': return 'rose';
+      default: return 'zinc';
+    }
+  };
+
   const filteredTasks = tasks.filter(t => 
     t.role.toLowerCase().includes(search.toLowerCase()) || 
     t.responsibleParty.toLowerCase().includes(search.toLowerCase())
@@ -305,7 +327,7 @@ export default function TaskBoard({ user, staff }: TaskBoardProps) {
                       <th className="px-10 py-8 w-24 text-center border-r border-zinc-800/50">SN</th>
                       <th className="px-10 py-8 w-1/4 border-r border-zinc-800/50">Strategic Directive</th>
                       <th className="px-10 py-8 w-1/4 border-r border-zinc-800/50">Execution Node</th>
-                      <th className="px-10 py-8">Core Analysis (PRRR + SMART)</th>
+                      <th className="px-10 py-8">Workflow Velocity</th>
                       <th className="px-10 py-8 w-24 text-right print:hidden">View</th>
                    </tr>
                 </thead>
@@ -313,6 +335,8 @@ export default function TaskBoard({ user, staff }: TaskBoardProps) {
                    {filteredTasks.map((task) => {
                       const isAssignedToMe = user.name === task.responsibleParty;
                       const isAwaiting = task.skrc.status === 'Awaiting Approval';
+                      const progress = getStatusProgress(task.skrc.status);
+                      const color = getStatusColor(task.skrc.status);
 
                       return (
                         <React.Fragment key={task.id}>
@@ -349,9 +373,27 @@ export default function TaskBoard({ user, staff }: TaskBoardProps) {
                                  </div>
                               </td>
                               <td className="px-10 py-10 align-top">
-                                 <div className="grid grid-cols-2 gap-4 h-[240px]">
-                                    {renderLargeTextBox("Problem Identification", task.problem.description, "amber", <AlertTriangle size={12}/>)}
-                                    {renderLargeTextBox("SMART Specific Goal", task.smart.specific, "blue", <TargetIcon size={12}/>)}
+                                 <div className="space-y-6">
+                                    <div className="flex justify-between items-end">
+                                       <span className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">Task Integrity</span>
+                                       <span className={`text-lg font-black text-${color}-500`}>{progress}%</span>
+                                    </div>
+                                    <div className="w-full bg-zinc-950 h-3 rounded-full overflow-hidden border border-zinc-800 shadow-inner">
+                                       <div 
+                                          className={`h-full bg-${color}-500 shadow-[0_0_20px_rgba(245,158,11,0.3)] transition-all duration-1000 ease-out`}
+                                          style={{ width: `${progress}%` }}
+                                       ></div>
+                                    </div>
+                                    <div className="grid grid-cols-2 gap-3 opacity-60">
+                                       <div className="p-4 bg-zinc-950/40 rounded-2xl border border-zinc-800">
+                                          <p className="text-[8px] font-black text-zinc-600 uppercase mb-1">Risk Node</p>
+                                          <p className="text-[10px] font-bold text-zinc-400 truncate">{task.problem.risk || "Evaluating..."}</p>
+                                       </div>
+                                       <div className="p-4 bg-zinc-950/40 rounded-2xl border border-zinc-800">
+                                          <p className="text-[8px] font-black text-zinc-600 uppercase mb-1">Timeline</p>
+                                          <p className="text-[10px] font-bold text-zinc-400 truncate">{task.smart.timeBound}</p>
+                                       </div>
+                                    </div>
                                  </div>
                               </td>
                               <td className="px-10 py-10 text-right align-top print:hidden">
@@ -363,107 +405,147 @@ export default function TaskBoard({ user, staff }: TaskBoardProps) {
                            {expandedTaskId === task.id && (
                              <tr className="print:hidden">
                                 <td colSpan={5} className="px-10 pb-16 pt-6 bg-zinc-950/80 border-x border-zinc-800">
-                                   <div className="space-y-10">
-                                      {/* Status Action Banner */}
-                                      <div className={`bg-zinc-900/80 backdrop-blur-md border rounded-[2.5rem] p-10 flex flex-col md:flex-row items-center justify-between gap-8 ${isAwaiting ? 'border-blue-500/50 shadow-[0_0_30px_rgba(59,130,246,0.1)]' : 'border-zinc-800 shadow-2xl'}`}>
-                                         <div className="flex items-center gap-6">
-                                            <div className={`p-5 rounded-3xl ${isAwaiting ? 'bg-blue-500/10 text-blue-500' : 'bg-amber-500/10 text-amber-500'}`}>
-                                               {isAwaiting ? <Eye size={32} /> : <Zap size={32} />}
+                                   <div className="space-y-10 animate-in fade-in slide-in-from-top-4 duration-500">
+                                      {/* Status Action Banner with Progress Overview */}
+                                      <div className={`bg-zinc-900/80 backdrop-blur-md border rounded-[2.5rem] p-10 flex flex-col items-stretch gap-10 ${isAwaiting ? 'border-blue-500/50 shadow-[0_0_30px_rgba(59,130,246,0.1)]' : 'border-zinc-800 shadow-2xl'}`}>
+                                         <div className="flex flex-col md:flex-row items-center justify-between gap-8">
+                                            <div className="flex items-center gap-6">
+                                               <div className={`p-5 rounded-3xl ${isAwaiting ? 'bg-blue-500/10 text-blue-500' : 'bg-amber-500/10 text-amber-500'}`}>
+                                                  {isAwaiting ? <Eye size={32} /> : <Zap size={32} />}
+                                               </div>
+                                               <div>
+                                                  <h4 className="text-sm font-black text-white uppercase tracking-[0.3em]">
+                                                     {isAwaiting ? 'Verification Protocol' : 'Mission Status'}
+                                                  </h4>
+                                                  <p className={`text-[11px] mt-1 font-bold uppercase tracking-widest ${isAwaiting ? 'text-blue-500' : 'text-zinc-500'}`}>
+                                                     Current State: {task.skrc.status}
+                                                  </p>
+                                               </div>
                                             </div>
-                                            <div>
-                                               <h4 className="text-sm font-black text-white uppercase tracking-[0.3em]">
-                                                  {isAwaiting ? 'Verification Protocol' : 'Mission Status'}
-                                               </h4>
-                                               <p className={`text-[11px] mt-1 font-bold uppercase tracking-widest ${isAwaiting ? 'text-blue-500' : 'text-zinc-500'}`}>
-                                                  Current: {task.skrc.status}
-                                               </p>
+
+                                            <div className="flex flex-wrap gap-4 justify-center">
+                                               {isManagement && isAwaiting && (
+                                                 <>
+                                                   <button 
+                                                     onClick={(e) => { e.stopPropagation(); handleApproveTask(task); }} 
+                                                     className="px-10 py-4 bg-emerald-600 text-white font-black rounded-2xl text-[11px] uppercase tracking-widest flex items-center gap-3 hover:bg-emerald-500 transition-all shadow-xl shadow-emerald-600/20"
+                                                   >
+                                                      <ThumbsUp size={16} /> Finalize Objective
+                                                   </button>
+                                                   <button 
+                                                     onClick={(e) => { e.stopPropagation(); handleRejectTask(task); }} 
+                                                     className="px-10 py-4 bg-rose-600/10 text-rose-500 border border-rose-500/20 font-black rounded-2xl text-[11px] uppercase tracking-widest flex items-center gap-3 hover:bg-rose-600 hover:text-white transition-all shadow-xl"
+                                                   >
+                                                      <RotateCcw size={16} /> Request Revision
+                                                   </button>
+                                                 </>
+                                               )}
+
+                                               {isAssignedToMe && !task.skrc.isStarted && (
+                                                 <button onClick={(e) => { e.stopPropagation(); handleStartTask(task); }} className="px-12 py-4 bg-blue-600 text-white font-black rounded-2xl text-[11px] uppercase tracking-widest hover:scale-105 transition-all shadow-xl shadow-blue-600/20">Acknowledge & Start</button>
+                                               )}
+                                               {isAssignedToMe && task.skrc.isStarted && task.skrc.status === 'Ongoing' && (
+                                                 <button onClick={(e) => { e.stopPropagation(); handleInitiateDone(task); }} className="px-12 py-4 bg-emerald-600 text-white font-black rounded-2xl text-[11px] uppercase tracking-widest hover:scale-105 transition-all shadow-xl shadow-emerald-600/20">Submit Completion Report</button>
+                                               )}
+                                               {isAssignedToMe && isAwaiting && (
+                                                 <div className="px-8 py-4 bg-zinc-800 text-blue-500 font-black rounded-2xl text-[10px] uppercase tracking-[0.2em] border border-blue-500/20 flex items-center gap-3">
+                                                   <Clock size={16}/> Awaiting Executive Approval
+                                                 </div>
+                                               )}
+
+                                               {isManagement && (
+                                                 <button onClick={(e) => { e.stopPropagation(); handleDeleteTrigger(task); }} className="p-4 bg-rose-500/10 text-rose-500 rounded-2xl hover:bg-rose-500 hover:text-white transition-all border border-rose-500/20" title="Decommission Task"><Trash2 size={20} /></button>
+                                               )}
                                             </div>
                                          </div>
-                                         
-                                         <div className="flex flex-wrap gap-4 justify-center">
-                                            {isManagement && isAwaiting && (
-                                              <>
-                                                <button 
-                                                  onClick={(e) => { e.stopPropagation(); handleApproveTask(task); }} 
-                                                  className="px-10 py-4 bg-emerald-600 text-white font-black rounded-2xl text-[11px] uppercase tracking-widest flex items-center gap-3 hover:bg-emerald-500 transition-all shadow-xl shadow-emerald-600/20"
-                                                >
-                                                   <ThumbsUp size={16} /> Finalize Objective
-                                                </button>
-                                                <button 
-                                                  onClick={(e) => { e.stopPropagation(); handleRejectTask(task); }} 
-                                                  className="px-10 py-4 bg-rose-600/10 text-rose-500 border border-rose-500/20 font-black rounded-2xl text-[11px] uppercase tracking-widest flex items-center gap-3 hover:bg-rose-600 hover:text-white transition-all shadow-xl"
-                                                >
-                                                   <RotateCcw size={16} /> Request Revision
-                                                </button>
-                                              </>
-                                            )}
 
-                                            {isAssignedToMe && !task.skrc.isStarted && (
-                                              <button onClick={(e) => { e.stopPropagation(); handleStartTask(task); }} className="px-12 py-4 bg-blue-600 text-white font-black rounded-2xl text-[11px] uppercase tracking-widest hover:scale-105 transition-all shadow-xl shadow-blue-600/20">Acknowledge & Start</button>
-                                            )}
-                                            {isAssignedToMe && task.skrc.isStarted && task.skrc.status === 'Ongoing' && (
-                                              <button onClick={(e) => { e.stopPropagation(); handleInitiateDone(task); }} className="px-12 py-4 bg-emerald-600 text-white font-black rounded-2xl text-[11px] uppercase tracking-widest hover:scale-105 transition-all shadow-xl shadow-emerald-600/20">Submit Completion Report</button>
-                                            )}
-                                            {isAssignedToMe && isAwaiting && (
-                                              <div className="px-8 py-4 bg-zinc-800 text-blue-500 font-black rounded-2xl text-[10px] uppercase tracking-[0.2em] border border-blue-500/20 flex items-center gap-3">
-                                                <Clock size={16}/> Awaiting Executive Approval
-                                              </div>
-                                            )}
-
-                                            {isManagement && (
-                                              <button onClick={(e) => { e.stopPropagation(); handleDeleteTrigger(task); }} className="p-4 bg-rose-500/10 text-rose-500 rounded-2xl hover:bg-rose-500 hover:text-white transition-all border border-rose-500/20" title="Decommission Task"><Trash2 size={20} /></button>
-                                            )}
+                                         <div className="space-y-4">
+                                            <div className="flex justify-between items-center text-[10px] font-black uppercase tracking-widest text-zinc-500">
+                                               <span>Execution Roadmap Progress</span>
+                                               <span className="text-white">{progress}% Verified</span>
+                                            </div>
+                                            <div className="w-full h-4 bg-black rounded-full p-1 border border-zinc-800 shadow-inner">
+                                               <div 
+                                                  className={`h-full rounded-full bg-${color}-500 transition-all duration-1000 ease-in-out shadow-[0_0_15px_rgba(255,255,255,0.1)]`}
+                                                  style={{ width: `${progress}%` }}
+                                               ></div>
+                                            </div>
                                          </div>
                                       </div>
 
-                                      {/* Full Details Grid */}
+                                      {/* Main Strategic Details: Two Column Refactor */}
                                       <div className="grid grid-cols-1 xl:grid-cols-2 gap-12">
-                                         {/* PRRR & SMART Left Side */}
-                                         <div className="space-y-10">
-                                            <div className="space-y-5">
-                                               <h4 className="text-[12px] font-black text-amber-500 uppercase tracking-[0.3em] flex items-center gap-3">
-                                                  <Info size={16}/> Strategic Breakdown
-                                               </h4>
-                                               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                                  {renderLargeTextBox("Root Cause", task.problem.rootCauseAndConsequences, "amber")}
-                                                  {renderLargeTextBox("Risk Assessment", task.problem.risk, "rose")}
-                                                  {renderLargeTextBox("Measurable Metric", task.smart.measurable, "blue")}
-                                                  {renderLargeTextBox("Deadline Detail", task.deadline + " | " + task.smart.timeBound, "emerald")}
+                                         {/* Column 1: PRRR ANALYSIS FRAMEWORK */}
+                                         <div className="space-y-8 bg-zinc-900/30 p-10 rounded-[3rem] border border-zinc-800/40">
+                                            <div className="flex items-center gap-4 border-b border-zinc-800/50 pb-6 mb-2">
+                                               <div className="p-3 bg-rose-500/10 text-rose-500 rounded-2xl"><ShieldAlert size={20}/></div>
+                                               <div>
+                                                  <h4 className="text-[14px] font-black text-white uppercase tracking-[0.3em]">PRRR Analysis</h4>
+                                                  <p className="text-[10px] text-zinc-600 font-bold uppercase tracking-widest">Problem Persistence Management</p>
                                                </div>
                                             </div>
-
-                                            <div className="space-y-5">
-                                               <h4 className="text-[12px] font-black text-blue-500 uppercase tracking-[0.3em] flex items-center gap-3">
-                                                  <MessageSquare size={16}/> Executive-Staff Dialogue
-                                               </h4>
-                                               <div className="bg-zinc-900 border border-zinc-800 rounded-[2.5rem] p-8 space-y-6 max-h-[400px] overflow-y-auto no-scrollbar shadow-inner">
-                                                  {(task.comments || []).map((c, i) => (
-                                                     <div key={i} className="space-y-2 border-b border-zinc-800/50 pb-4 last:border-0">
-                                                        <div className="flex justify-between items-center text-[10px] font-black uppercase">
-                                                           <span className="text-amber-500 flex items-center gap-2"><UserCircle size={12}/> {c.user}</span>
-                                                           <span className="text-zinc-600">{c.date}</span>
-                                                        </div>
-                                                        <p className="text-[13px] text-zinc-300 leading-relaxed pl-5 border-l border-zinc-800">{c.text}</p>
-                                                     </div>
-                                                  ))}
-                                                  <div className="pt-4 flex gap-3">
-                                                     <input 
-                                                       className="flex-1 bg-zinc-950 border border-zinc-800 rounded-2xl px-6 py-3.5 text-xs text-white outline-none focus:border-amber-500 shadow-inner"
-                                                       placeholder="Add a strategic note or update..."
-                                                       value={newComment}
-                                                       onChange={e => setNewComment(e.target.value)}
-                                                     />
-                                                     <button onClick={() => handleAddComment(task)} className="p-3.5 bg-amber-500 text-black rounded-2xl hover:scale-110 transition-all shadow-lg shadow-amber-500/20"><Send size={18}/></button>
-                                                  </div>
+                                            
+                                            <div className="space-y-6">
+                                               {renderLargeTextBox("Problem Identification", task.problem.description, "rose", <AlertCircle size={12}/>)}
+                                               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                                  {renderLargeTextBox("Root Cause", task.problem.rootCauseAndConsequences, "amber", <Activity size={12}/>)}
+                                                  {renderLargeTextBox("Risk Exposure", task.problem.risk, "rose", <AlertTriangle size={12}/>)}
                                                </div>
                                             </div>
                                          </div>
 
-                                         {/* Report & Remarks Right Side */}
+                                         {/* Column 2: SMART EXECUTION HUB */}
+                                         <div className="space-y-8 bg-zinc-900/30 p-10 rounded-[3rem] border border-zinc-800/40">
+                                            <div className="flex items-center gap-4 border-b border-zinc-800/50 pb-6 mb-2">
+                                               <div className="p-3 bg-blue-500/10 text-blue-500 rounded-2xl"><TargetIcon size={20}/></div>
+                                               <div>
+                                                  <h4 className="text-[14px] font-black text-white uppercase tracking-[0.3em]">SMART Framework</h4>
+                                                  <p className="text-[10px] text-zinc-600 font-bold uppercase tracking-widest">Precision Execution Parameters</p>
+                                               </div>
+                                            </div>
+
+                                            <div className="space-y-6">
+                                               {renderLargeTextBox("Specific Strategic Goal", task.smart.specific, "blue", <Target size={12}/>)}
+                                               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                                  {renderLargeTextBox("Measurable Metrics", task.smart.measurable, "emerald", <BarChart size={12}/>)}
+                                                  {renderLargeTextBox("Operational Deadline", task.deadline + " | " + task.smart.timeBound, "blue", <Clock size={12}/>)}
+                                               </div>
+                                            </div>
+                                         </div>
+                                      </div>
+
+                                      {/* Interaction & Dialogue Grid */}
+                                      <div className="grid grid-cols-1 xl:grid-cols-2 gap-12">
+                                         <div className="space-y-5">
+                                            <h4 className="text-[12px] font-black text-blue-500 uppercase tracking-[0.3em] flex items-center gap-3 ml-4">
+                                               <MessageSquare size={16}/> Executive-Staff Dialogue
+                                            </h4>
+                                            <div className="bg-zinc-900 border border-zinc-800 rounded-[2.5rem] p-8 space-y-6 max-h-[400px] overflow-y-auto no-scrollbar shadow-inner">
+                                               {(task.comments || []).map((c, i) => (
+                                                  <div key={i} className="space-y-2 border-b border-zinc-800/50 pb-4 last:border-0">
+                                                     <div className="flex justify-between items-center text-[10px] font-black uppercase">
+                                                        <span className="text-amber-500 flex items-center gap-2"><UserCircle size={12}/> {c.user}</span>
+                                                        <span className="text-zinc-600">{c.date}</span>
+                                                     </div>
+                                                     <p className="text-[13px] text-zinc-300 leading-relaxed pl-5 border-l border-zinc-800">{c.text}</p>
+                                                  </div>
+                                               ))}
+                                               <div className="pt-4 flex gap-3">
+                                                  <input 
+                                                    className="flex-1 bg-zinc-950 border border-zinc-800 rounded-2xl px-6 py-3.5 text-xs text-white outline-none focus:border-amber-500 shadow-inner"
+                                                    placeholder="Add a strategic note or update..."
+                                                    value={newComment}
+                                                    onChange={e => setNewComment(e.target.value)}
+                                                  />
+                                                  <button onClick={() => handleAddComment(task)} className="p-3.5 bg-amber-500 text-black rounded-2xl hover:scale-110 transition-all shadow-lg shadow-amber-500/20"><Send size={18}/></button>
+                                               </div>
+                                            </div>
+                                         </div>
+
                                          <div className="space-y-10">
                                             <div className="space-y-5">
-                                               <h4 className="text-[12px] font-black text-emerald-500 uppercase tracking-[0.3em] flex items-center gap-3">
-                                                  <FileInput size={16}/> Outcome & Reflection
+                                               <h4 className="text-[12px] font-black text-emerald-500 uppercase tracking-[0.3em] flex items-center gap-3 ml-4">
+                                                  <FileInput size={16}/> Mission Reflection
                                                </h4>
                                                <div className="h-[280px]">
                                                   {renderLargeTextBox("Staff Completion Report", task.skrc.report || "Awaiting submission of execution report.", "emerald", <FileText size={14}/>)}
@@ -472,7 +554,7 @@ export default function TaskBoard({ user, staff }: TaskBoardProps) {
 
                                             {isManagement && (
                                                <div className="space-y-5">
-                                                  <h4 className="text-[12px] font-black text-zinc-400 uppercase tracking-[0.3em] flex items-center gap-3">
+                                                  <h4 className="text-[12px] font-black text-zinc-400 uppercase tracking-[0.3em] flex items-center gap-3 ml-4">
                                                      <ShieldCheck size={16}/> Executive appraisal
                                                   </h4>
                                                   <div className="relative group">
