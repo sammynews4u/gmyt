@@ -7,7 +7,7 @@ import {
   Target, Bookmark, Clock, AlertTriangle, ShieldCheck,
   ClipboardList, Settings2, Sparkles, Wand2, UserCircle,
   Zap, Cpu, ListChecks, FileInput, Send, Printer, MessageSquare,
-  FileText
+  FileText, AlertCircle, Eye, ThumbsUp, RotateCcw
 } from 'lucide-react';
 import { Task, UserAccount } from '../types';
 import { storageService } from '../services/storageService';
@@ -35,14 +35,14 @@ export default function TaskBoard({ user, staff }: TaskBoardProps) {
   const [reportText, setReportText] = useState('');
   const [isReportModalOpen, setIsReportModalOpen] = useState(false);
 
+  // Decommissioning (Delete) Modal States
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [taskToDelete, setTaskToDelete] = useState<Task | null>(null);
+  const [deleteConfirmationText, setDeleteConfirmationText] = useState('');
+
   const isCEO = user.role === 'CEO';
   const isPM = user.role === 'Project Manager';
   const isManagement = isCEO || isPM;
-
-  const TIME_BOUND_OPTIONS = [
-    "30 Minutes", "1 Hour", "1.5 Hours", "2 Hours", "2.5 Hours", 
-    "3 Hours", "4 Hours", "6 Hours", "8 Hours", "24 Hours"
-  ];
 
   const initialTaskState: Partial<Task> = {
     role: '',
@@ -142,7 +142,7 @@ export default function TaskBoard({ user, staff }: TaskBoardProps) {
       ...reportingTask,
       skrc: { 
         ...reportingTask.skrc, 
-        status: 'Completed',
+        status: 'Awaiting Approval', // Changed from 'Completed' for mandatory verification
         report: reportText 
       }
     };
@@ -152,6 +152,30 @@ export default function TaskBoard({ user, staff }: TaskBoardProps) {
     setIsReportModalOpen(false);
     setReportingTask(null);
     setReportText('');
+  };
+
+  const handleApproveTask = async (task: Task) => {
+    if (!isManagement) return;
+    setIsUpdatingTask(task.id);
+    const updatedTask: Task = {
+      ...task,
+      skrc: { ...task.skrc, status: 'Completed' }
+    };
+    await storageService.saveTask(updatedTask);
+    setTasks(tasks.map(t => t.id === task.id ? updatedTask : t));
+    setIsUpdatingTask(null);
+  };
+
+  const handleRejectTask = async (task: Task) => {
+    if (!isManagement) return;
+    setIsUpdatingTask(task.id);
+    const updatedTask: Task = {
+      ...task,
+      skrc: { ...task.skrc, status: 'Ongoing' } // Send back to Ongoing for revision
+    };
+    await storageService.saveTask(updatedTask);
+    setTasks(tasks.map(t => t.id === task.id ? updatedTask : t));
+    setIsUpdatingTask(null);
   };
 
   const handleAddComment = async (task: Task) => {
@@ -167,10 +191,21 @@ export default function TaskBoard({ user, staff }: TaskBoardProps) {
     setNewComment('');
   };
 
-  const handleDeleteTask = async (id: string) => {
-    if (!confirm("Delete this strategic entry?")) return;
-    await storageService.deleteTask(id);
-    setTasks(tasks.filter(t => t.id !== id));
+  const handleDeleteTrigger = (task: Task) => {
+    setTaskToDelete(task);
+    setDeleteConfirmationText('');
+    setIsDeleteModalOpen(true);
+  };
+
+  const executeDeleteTask = async () => {
+    if (!taskToDelete || deleteConfirmationText !== 'DELETE') return;
+    
+    setIsUpdatingTask(taskToDelete.id);
+    await storageService.deleteTask(taskToDelete.id);
+    setTasks(tasks.filter(t => t.id !== taskToDelete.id));
+    setIsUpdatingTask(null);
+    setIsDeleteModalOpen(false);
+    setTaskToDelete(null);
   };
 
   const handlePrint = () => {
@@ -259,11 +294,12 @@ export default function TaskBoard({ user, staff }: TaskBoardProps) {
                    {filteredTasks.map((task) => {
                       const isAssignedToMe = user.name === task.responsibleParty;
                       const canControl = isAssignedToMe || isManagement;
+                      const isAwaiting = task.skrc.status === 'Awaiting Approval';
 
                       return (
                         <React.Fragment key={task.id}>
                            <tr 
-                             className={`hover:bg-zinc-800/30 transition-all cursor-pointer ${expandedTaskId === task.id ? 'bg-amber-500/5' : ''}`}
+                             className={`hover:bg-zinc-800/30 transition-all cursor-pointer ${expandedTaskId === task.id ? 'bg-amber-500/5' : ''} ${isAwaiting ? 'border-l-4 border-l-blue-500' : ''}`}
                              onClick={() => setExpandedTaskId(expandedTaskId === task.id ? null : task.id)}
                            >
                               <td className="px-8 py-6 text-center border-r border-zinc-800/50 align-top">
@@ -280,16 +316,20 @@ export default function TaskBoard({ user, staff }: TaskBoardProps) {
                               <td className="px-8 py-6 border-r border-zinc-800/50 align-top">
                                  {renderLargeTextBox("Execution Node", task.tasksForToday, "blue")}
                                  <div className="mt-3 flex gap-2">
-                                    <span className={`text-[8px] font-black px-2 py-1 rounded-full border ${task.skrc.status === 'Completed' ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-500' : 'bg-amber-500/10 border-amber-500/30 text-amber-500'}`}>
+                                    <span className={`text-[8px] font-black px-2 py-1 rounded-full border ${
+                                      task.skrc.status === 'Completed' ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-500' : 
+                                      task.skrc.status === 'Awaiting Approval' ? 'bg-blue-500/10 border-blue-500/30 text-blue-500' :
+                                      'bg-amber-500/10 border-amber-500/30 text-amber-500'
+                                    }`}>
                                        {task.skrc.status.toUpperCase()}
                                     </span>
                                  </div>
                               </td>
                               <td className="px-8 py-6 align-top">
                                  <div className="grid grid-cols-3 gap-3 h-full min-h-[140px]">
-                                    {renderLargeTextBox("PRRR", task.problem.description, "amber")}
-                                    {renderLargeTextBox("SMART", task.smart.specific, "blue")}
-                                    {renderLargeTextBox("SKRC", task.skrc.keyResult || 'Awaiting...', "emerald")}
+                                    {renderLargeTextBox("PRRR Identification", task.problem.description, "amber")}
+                                    {renderLargeTextBox("SMART Goal", task.smart.specific, "blue")}
+                                    {renderLargeTextBox("SKRC Results", task.skrc.keyResult || 'Awaiting...', "emerald")}
                                  </div>
                               </td>
                               <td className="px-8 py-6 text-right align-top print:hidden">
@@ -300,23 +340,53 @@ export default function TaskBoard({ user, staff }: TaskBoardProps) {
                              <tr className="print:hidden">
                                 <td colSpan={5} className="px-8 pb-12 pt-4 bg-zinc-950/80 border-x border-zinc-800">
                                    <div className="space-y-8">
-                                      <div className="bg-zinc-900 border border-zinc-800 rounded-3xl p-6 flex flex-col md:flex-row items-center justify-between gap-6">
+                                      <div className={`bg-zinc-900 border rounded-3xl p-6 flex flex-col md:flex-row items-center justify-between gap-6 ${isAwaiting ? 'border-blue-500/50 shadow-[0_0_20px_rgba(59,130,246,0.1)]' : 'border-zinc-800'}`}>
                                          <div className="flex items-center gap-4">
-                                            <Zap className="text-amber-500" size={24} />
+                                            {isAwaiting ? <Eye className="text-blue-500" size={24} /> : <Zap className="text-amber-500" size={24} />}
                                             <div>
-                                               <h4 className="text-xs font-black text-white uppercase tracking-widest">Execution Hub</h4>
-                                               <p className="text-[10px] text-zinc-500 uppercase">Status: <span className="text-amber-500">{task.skrc.status}</span></p>
+                                               <h4 className="text-xs font-black text-white uppercase tracking-widest">
+                                                  {isAwaiting ? 'Verification Protocol' : 'Execution Hub'}
+                                               </h4>
+                                               <p className="text-[10px] text-zinc-500 uppercase">
+                                                  Status: <span className={isAwaiting ? 'text-blue-500' : 'text-amber-500'}>{task.skrc.status}</span>
+                                               </p>
                                             </div>
                                          </div>
                                          <div className="flex gap-4">
+                                            {/* Final Approval Phase for Management */}
+                                            {isManagement && isAwaiting && (
+                                              <>
+                                                <button 
+                                                  onClick={(e) => { e.stopPropagation(); handleApproveTask(task); }} 
+                                                  className="px-8 py-3 bg-emerald-600 text-white font-black rounded-xl text-[10px] uppercase tracking-widest flex items-center gap-2 hover:bg-emerald-500 transition-all"
+                                                >
+                                                   <ThumbsUp size={14} /> Verify & Complete
+                                                </button>
+                                                <button 
+                                                  onClick={(e) => { e.stopPropagation(); handleRejectTask(task); }} 
+                                                  className="px-8 py-3 bg-rose-600/10 text-rose-500 border border-rose-500/20 font-black rounded-xl text-[10px] uppercase tracking-widest flex items-center gap-2 hover:bg-rose-600 hover:text-white transition-all"
+                                                >
+                                                   <RotateCcw size={14} /> Request Revision
+                                                </button>
+                                              </>
+                                            )}
+
+                                            {/* Staff Action Phase */}
                                             {isAssignedToMe && !task.skrc.isStarted && (
                                               <button onClick={(e) => { e.stopPropagation(); handleStartTask(task); }} className="px-8 py-3 bg-blue-600 text-white font-black rounded-xl text-[10px] uppercase tracking-widest">Start Task</button>
                                             )}
-                                            {canControl && task.skrc.isStarted && task.skrc.status !== 'Completed' && (
-                                              <button onClick={(e) => { e.stopPropagation(); handleInitiateDone(task); }} className="px-8 py-3 bg-emerald-600 text-white font-black rounded-xl text-[10px] uppercase tracking-widest">Mark as DONE</button>
+                                            {isAssignedToMe && task.skrc.isStarted && task.skrc.status === 'Ongoing' && (
+                                              <button onClick={(e) => { e.stopPropagation(); handleInitiateDone(task); }} className="px-8 py-3 bg-emerald-600 text-white font-black rounded-xl text-[10px] uppercase tracking-widest">Submit for Approval</button>
                                             )}
+                                            {isAssignedToMe && isAwaiting && (
+                                              <div className="px-6 py-3 bg-zinc-800 text-blue-500 font-black rounded-xl text-[9px] uppercase tracking-widest border border-blue-500/20">
+                                                Pending Management Verification
+                                              </div>
+                                            )}
+
+                                            {/* Decommissioning Control */}
                                             {isManagement && (
-                                              <button onClick={(e) => { e.stopPropagation(); handleDeleteTask(task.id); }} className="p-3 bg-rose-500/10 text-rose-500 rounded-xl hover:bg-rose-500 hover:text-white transition-all"><Trash2 size={18} /></button>
+                                              <button onClick={(e) => { e.stopPropagation(); handleDeleteTrigger(task); }} className="p-3 bg-rose-500/10 text-rose-500 rounded-xl hover:bg-rose-500 hover:text-white transition-all"><Trash2 size={18} /></button>
                                             )}
                                          </div>
                                       </div>
@@ -347,13 +417,13 @@ export default function TaskBoard({ user, staff }: TaskBoardProps) {
                                          </div>
                                          <div className="space-y-4">
                                             <h4 className="text-[10px] font-black text-emerald-500 uppercase tracking-widest flex items-center gap-2"><FileInput size={14}/> Mission Reflection</h4>
-                                            {renderLargeTextBox("Report Summary", task.skrc.report || "No report submitted yet.", "emerald", <FileText size={10}/>)}
+                                            {renderLargeTextBox("Completion Report", task.skrc.report || "No report submitted yet.", "emerald", <FileText size={10}/>)}
                                             {isManagement && (
                                                <div className="space-y-2">
-                                                  <label className="text-[9px] font-bold text-zinc-600 uppercase">Strategic Line Remarks</label>
+                                                  <label className="text-[9px] font-bold text-zinc-600 uppercase">Management Appraisal / Remarks</label>
                                                   <textarea 
                                                      className="w-full bg-zinc-950 border border-zinc-800 rounded-xl p-4 text-xs text-zinc-300 outline-none focus:border-amber-500"
-                                                     placeholder="Provide management feedback..."
+                                                     placeholder="Provide appraisal or feedback on this task execution..."
                                                      value={task.lineRemarks}
                                                      onChange={async (e) => {
                                                         const updatedTask = { ...task, lineRemarks: e.target.value };
@@ -378,6 +448,70 @@ export default function TaskBoard({ user, staff }: TaskBoardProps) {
         )}
       </div>
 
+      {/* Decommissioning Modal (Delete Confirmation) */}
+      {isDeleteModalOpen && taskToDelete && (
+        <div className="fixed inset-0 z-[250] flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/95 backdrop-blur-xl" onClick={() => setIsDeleteModalOpen(false)}></div>
+          <div className="relative w-full max-w-xl bg-zinc-950 border border-rose-500/30 rounded-[3rem] p-10 shadow-2xl animate-in zoom-in duration-300">
+             <div className="flex items-center gap-6 mb-8">
+               <div className="p-5 bg-rose-500/10 rounded-[2rem] border border-rose-500/20 text-rose-500">
+                  <ShieldAlert size={40} />
+               </div>
+               <div>
+                  <h2 className="text-2xl font-black text-white uppercase tracking-tight">Decommissioning Protocol</h2>
+                  <p className="text-xs text-rose-500 font-bold uppercase tracking-widest mt-1">Authorized Access Only</p>
+               </div>
+             </div>
+
+             <div className="space-y-6">
+                <div className="p-6 bg-zinc-900/50 border border-zinc-800 rounded-2xl space-y-4">
+                   <div>
+                      <span className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">Target Entry SN</span>
+                      <p className="text-lg font-black text-white mt-1">#{taskToDelete.sn}</p>
+                   </div>
+                   <div>
+                      <span className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">Directive Anchor</span>
+                      <p className="text-sm font-medium text-zinc-300 mt-1 line-clamp-2 italic">"{taskToDelete.role}"</p>
+                   </div>
+                   <div>
+                      <span className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">Assigned Node</span>
+                      <p className="text-sm font-black text-amber-500 mt-1 uppercase">{taskToDelete.responsibleParty}</p>
+                   </div>
+                </div>
+
+                <div className="space-y-3">
+                   <label className="text-[10px] font-black text-zinc-400 uppercase tracking-[0.2em] ml-1">Type "DELETE" to confirm decommissioning</label>
+                   <input 
+                     type="text" 
+                     autoFocus
+                     className="w-full bg-zinc-950 border border-rose-500/20 rounded-2xl py-4 px-6 text-sm text-rose-500 font-black tracking-widest outline-none focus:border-rose-500/50 transition-all placeholder:text-zinc-800"
+                     placeholder="CONFIRMATION KEY"
+                     value={deleteConfirmationText}
+                     onChange={(e) => setDeleteConfirmationText(e.target.value.toUpperCase())}
+                   />
+                </div>
+
+                <div className="flex gap-4 pt-4">
+                   <button 
+                     onClick={executeDeleteTask}
+                     disabled={deleteConfirmationText !== 'DELETE' || isUpdatingTask === taskToDelete.id}
+                     className="flex-1 py-5 bg-rose-600 text-white font-black rounded-2xl uppercase tracking-widest text-xs shadow-lg shadow-rose-600/20 hover:bg-rose-500 transition-all disabled:opacity-20 disabled:grayscale"
+                   >
+                      {isUpdatingTask === taskToDelete.id ? <Loader2 className="animate-spin" size={18} /> : "Decommission Entry"}
+                   </button>
+                   <button 
+                     onClick={() => setIsDeleteModalOpen(false)}
+                     className="px-8 py-5 bg-zinc-900 text-zinc-400 font-black rounded-2xl uppercase tracking-widest text-xs border border-zinc-800 hover:text-white transition-all"
+                   >
+                      Abort
+                   </button>
+                </div>
+             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Completion Report Modal */}
       {isReportModalOpen && reportingTask && (
         <div className="fixed inset-0 z-[200] flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-black/95 backdrop-blur-md" onClick={() => setIsReportModalOpen(false)}></div>
@@ -386,25 +520,25 @@ export default function TaskBoard({ user, staff }: TaskBoardProps) {
                <div className="flex items-center gap-6">
                  <CheckCircle className="text-emerald-500" size={32} />
                  <div>
-                   <h2 className="text-2xl font-black text-white uppercase tracking-tight">Mission Completion</h2>
-                   <p className="text-xs text-zinc-500 mt-1 uppercase tracking-widest">Document Results & Challenges</p>
+                   <h2 className="text-2xl font-black text-white uppercase tracking-tight">Strategy Realization</h2>
+                   <p className="text-xs text-zinc-500 mt-1 uppercase tracking-widest">Submit Findings for Management Review</p>
                  </div>
                </div>
                <button onClick={() => setIsReportModalOpen(false)} className="p-4 bg-zinc-900 rounded-3xl text-zinc-500 hover:text-white"><X size={24}/></button>
              </div>
              <div className="space-y-6">
                 <div className="space-y-2">
-                   <label className="text-[10px] font-black text-zinc-600 uppercase">Input Execution Challenges & Results</label>
+                   <label className="text-[10px] font-black text-zinc-600 uppercase">Execution Outcomes & Strategic Learnings</label>
                    <textarea 
                      rows={6}
-                     placeholder="Provide your completion report, results, and any challenges encountered..." 
+                     placeholder="Detail your results, attainment of SMART goals, and any challenges faced..." 
                      className="w-full bg-zinc-950 border border-zinc-800 p-6 rounded-[2rem] text-sm focus:border-emerald-500 outline-none text-white leading-relaxed" 
                      value={reportText} 
                      onChange={e => setReportText(e.target.value)} 
                    />
                 </div>
-                <button onClick={handleSubmitReport} className="w-full py-5 bg-emerald-600 text-white font-black rounded-2xl uppercase tracking-widest text-xs flex items-center justify-center gap-3 hover:shadow-lg hover:shadow-emerald-600/20 transition-all">
-                   <Send size={18} /> Finalize Mission & Log Report
+                <button onClick={handleSubmitReport} className="w-full py-5 bg-blue-600 text-white font-black rounded-2xl uppercase tracking-widest text-xs flex items-center justify-center gap-3 hover:shadow-lg hover:shadow-blue-600/20 transition-all">
+                   <Send size={18} /> Dispatch for Management Verification
                 </button>
              </div>
           </div>
