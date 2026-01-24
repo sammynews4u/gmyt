@@ -1,6 +1,11 @@
 
 import React, { useState, useEffect } from 'react';
-import { Settings, Image as ImageIcon, Globe, MapPin, Phone, Mail, Save, UserPlus, Trash2, ShieldCheck, Loader2, Key, Download, Upload, Database, Settings2, Code, ChevronRight, Check, X, ShieldAlert, History, Cloud, CloudOff, RefreshCw, Zap, Briefcase, FileText } from 'lucide-react';
+import { 
+  Settings, Image as ImageIcon, Globe, MapPin, Phone, Mail, Save, 
+  UserPlus, Trash2, ShieldCheck, Loader2, Key, Download, Upload, 
+  Database, Settings2, Code, ChevronRight, Check, X, ShieldAlert, 
+  History, Cloud, CloudOff, RefreshCw, Zap, Briefcase, FileText, Send 
+} from 'lucide-react';
 import { UserAccount, UserRole, PasswordChangeRequest } from '../types';
 import { storageService } from '../services/storageService';
 import { STORES } from '../services/db';
@@ -33,9 +38,6 @@ const CompanySettings: React.FC<SettingsProps> = ({ role }) => {
   const [inspectedStore, setInspectedStore] = useState<string>('users');
   const [rawJson, setRawJson] = useState<string>('');
   
-  const [newPassword, setNewPassword] = useState('');
-  const [isRequestingPw, setIsRequestingPw] = useState(false);
-
   // Sync State
   const [syncKey, setSyncKey] = useState('');
   const [isSyncing, setIsSyncing] = useState(false);
@@ -51,22 +53,22 @@ const CompanySettings: React.FC<SettingsProps> = ({ role }) => {
     jobDescription: ''
   });
 
-  const [company, setCompany] = useState({
-    name: 'GMYT GROUP LTD',
-    address: '12 Fashion Way, Victoria Island, Lagos',
-    phone: '+234 800 123 4567',
-    email: 'info@gmyt.group',
-    website: 'www.gmyt.group'
-  });
-
   useEffect(() => {
     const saved = localStorage.getItem('gmyt_session');
     if (saved) setCurrentUser(JSON.parse(saved));
-    loadUsers();
-    loadPwRequests();
-    inspectDatabase();
-    loadSyncStatus();
-  }, [inspectedStore]);
+    loadInitialData();
+  }, []);
+
+  const loadInitialData = async () => {
+    setIsLoading(true);
+    await Promise.all([
+      loadUsers(),
+      loadPwRequests(),
+      loadSyncStatus()
+    ]);
+    await inspectDatabase();
+    setIsLoading(false);
+  };
 
   const loadSyncStatus = async () => {
     const key = await storageService.getSyncKey();
@@ -82,10 +84,8 @@ const CompanySettings: React.FC<SettingsProps> = ({ role }) => {
   };
 
   const loadUsers = async () => {
-    setIsLoading(true);
     const data = await storageService.getUsers();
     setUsers(data);
-    setIsLoading(false);
   };
 
   const loadPwRequests = async () => {
@@ -109,39 +109,6 @@ const CompanySettings: React.FC<SettingsProps> = ({ role }) => {
     setIsSaving(false);
   };
 
-  const handleSubmitPwRequest = async () => {
-    if (!newPassword || !currentUser) return;
-    setIsRequestingPw(true);
-    const request: PasswordChangeRequest = {
-      id: `pwr-${Date.now()}`,
-      userId: currentUser.id,
-      userName: currentUser.name,
-      newPassword: newPassword,
-      status: 'Pending',
-      requestDate: new Date().toLocaleDateString()
-    };
-    await storageService.createPasswordRequest(request);
-    await loadPwRequests();
-    
-    if (currentUser.role === 'CEO') {
-      const updatedUser = { ...currentUser, password: newPassword };
-      localStorage.setItem('gmyt_session', JSON.stringify(updatedUser));
-      setCurrentUser(updatedUser);
-      alert("Executive credentials updated immediately.");
-    } else {
-      alert("Password change request submitted to CEO for approval.");
-    }
-    
-    setNewPassword('');
-    setIsRequestingPw(false);
-  };
-
-  const handleProcessPwRequest = async (id: string, approved: boolean) => {
-    await storageService.processPasswordRequest(id, approved);
-    await loadPwRequests();
-    await loadUsers();
-  };
-
   const handleConnectSync = async () => {
     if (!syncKey.trim()) return;
     setIsSyncing(true);
@@ -150,6 +117,22 @@ const CompanySettings: React.FC<SettingsProps> = ({ role }) => {
     await loadUsers();
     setIsSyncing(false);
     alert("Strategic Sync Node Established. Pulling cloud state...");
+  };
+
+  const handleForcePush = async () => {
+    if (!syncKey.trim()) return;
+    setIsSyncing(true);
+    await storageService.forcePushAll();
+    await loadSyncStatus();
+    setIsSyncing(false);
+    alert("CRITICAL SYNC: All local data successfully pushed to CockroachDB cluster.");
+  };
+
+  const handleProcessPwRequest = async (id: string, status: 'Approved' | 'Rejected') => {
+    setIsSaving(true);
+    await storageService.processPasswordRequest(id, status);
+    await loadPwRequests();
+    setIsSaving(false);
   };
 
   const handleGenerateSyncKey = () => {
@@ -196,12 +179,9 @@ const CompanySettings: React.FC<SettingsProps> = ({ role }) => {
 
   if (isLoading) return <div className="h-96 flex items-center justify-center"><Loader2 className="animate-spin text-amber-500" size={48} /></div>;
 
-  const myRequests = pwRequests.filter(r => r.userId === currentUser?.id);
-  const pendingApprovals = pwRequests.filter(r => r.status === 'Pending' && r.userId !== currentUser?.id);
-
   return (
     <div className="max-w-5xl mx-auto space-y-12 pb-20 animate-in fade-in duration-700">
-      {/* Strategic Sync Hub (Multi-Device) */}
+      {/* Strategic Sync Hub */}
       <div className="space-y-6">
         <div className="flex items-center gap-3">
           <Cloud className="text-blue-500" />
@@ -217,7 +197,7 @@ const CompanySettings: React.FC<SettingsProps> = ({ role }) => {
               <div className="space-y-6">
                  <div>
                     <h3 className="text-xs font-black text-white uppercase tracking-[0.2em]">Multi-Device Provisioning</h3>
-                    <p className="text-[9px] text-zinc-500 mt-1 uppercase tracking-widest font-bold">Protocol: Vercel Cloud Mirror v1.2</p>
+                    <p className="text-[9px] text-zinc-500 mt-1 uppercase tracking-widest font-bold">Protocol: CockroachDB Mirror v1.5</p>
                  </div>
                  
                  <div className="space-y-4">
@@ -240,13 +220,22 @@ const CompanySettings: React.FC<SettingsProps> = ({ role }) => {
                           </button>
                        </div>
                     </div>
-                    <button 
-                      onClick={handleConnectSync}
-                      disabled={isSyncing || !syncKey}
-                      className="w-full py-4 gold-gradient text-black font-black rounded-xl text-[10px] font-black uppercase tracking-[0.2em] flex items-center justify-center gap-2 hover:shadow-[0_0_20px_rgba(251,191,36,0.2)] transition-all disabled:opacity-50"
-                    >
-                       {isSyncing ? <Loader2 className="animate-spin" size={14} /> : <><RefreshCw size={14} /> Establish Sync Link</>}
-                    </button>
+                    <div className="flex gap-3">
+                      <button 
+                        onClick={handleConnectSync}
+                        disabled={isSyncing || !syncKey}
+                        className="flex-1 py-4 gold-gradient text-black font-black rounded-xl text-[10px] uppercase tracking-[0.2em] flex items-center justify-center gap-2 hover:shadow-[0_0_20px_rgba(251,191,36,0.2)] transition-all disabled:opacity-50"
+                      >
+                         {isSyncing ? <Loader2 className="animate-spin" size={14} /> : <><RefreshCw size={14} /> Pull from Cloud</>}
+                      </button>
+                      <button 
+                        onClick={handleForcePush}
+                        disabled={isSyncing || !syncKey}
+                        className="flex-1 py-4 bg-zinc-800 border border-zinc-700 text-white font-black rounded-xl text-[10px] uppercase tracking-[0.2em] flex items-center justify-center gap-2 hover:bg-zinc-700 transition-all disabled:opacity-50"
+                      >
+                         {isSyncing ? <Loader2 className="animate-spin" size={14} /> : <><Send size={14} /> Push to Cloud</>}
+                      </button>
+                    </div>
                  </div>
               </div>
 
@@ -268,6 +257,40 @@ const CompanySettings: React.FC<SettingsProps> = ({ role }) => {
            </div>
         </div>
       </div>
+
+      {/* Password Management */}
+      {(role === 'CEO' || role === 'Project Manager') && pwRequests.length > 0 && (
+        <div className="space-y-6">
+          <div className="flex items-center gap-3">
+            <Key className="text-amber-500" />
+            <h2 className="text-xl font-bold text-white tracking-tight uppercase">Credential Requests</h2>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {pwRequests.filter(r => r.status === 'Pending').map(req => (
+              <div key={req.id} className="bg-zinc-900 border border-zinc-800 rounded-3xl p-6 space-y-4">
+                <div>
+                  <h4 className="text-sm font-bold text-white">{req.userName}</h4>
+                  <p className="text-[10px] text-zinc-500 uppercase tracking-widest">Request Date: {req.requestDate}</p>
+                </div>
+                <div className="flex gap-3">
+                  <button 
+                    onClick={() => handleProcessPwRequest(req.id, 'Approved')}
+                    className="flex-1 py-2 bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 rounded-xl text-[10px] font-black uppercase hover:bg-emerald-500 hover:text-black transition-all"
+                  >
+                    Approve
+                  </button>
+                  <button 
+                    onClick={() => handleProcessPwRequest(req.id, 'Rejected')}
+                    className="flex-1 py-2 bg-rose-500/10 text-rose-500 border border-rose-500/20 rounded-xl text-[10px] font-black uppercase hover:bg-rose-500 hover:text-white transition-all"
+                  >
+                    Reject
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Database Maintenance Section */}
       <div className="space-y-6">
