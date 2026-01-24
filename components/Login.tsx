@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { Lock, User, ShieldCheck, Loader2, ArrowRight } from 'lucide-react';
+import { Lock, User, ShieldCheck, Loader2, ArrowRight, AlertCircle } from 'lucide-react';
 import { storageService } from '../services/storageService';
 import { UserAccount } from '../types';
 
@@ -19,17 +19,34 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
     setIsLoading(true);
     setError('');
 
-    const users = await storageService.getUsers();
-    const user = users.find(u => u.username === username && u.password === password);
-
-    if (user) {
-      setTimeout(() => {
-        onLogin(user);
+    const timeout = setTimeout(() => {
+      if (isLoading) {
         setIsLoading(false);
-      }, 1000);
-    } else {
+        setError("Database handshake timed out. Please refresh the page and try again.");
+      }
+    }, 10000);
+
+    try {
+      const users = await storageService.getUsers();
+      const user = users.find(u => u.username === username && u.password === password);
+
+      if (user) {
+        // Slight artificial delay for UX/Security perception
+        setTimeout(() => {
+          clearTimeout(timeout);
+          onLogin(user);
+          setIsLoading(false);
+        }, 800);
+      } else {
+        clearTimeout(timeout);
+        setIsLoading(false);
+        setError('Invalid credentials. Please contact your CEO for access.');
+      }
+    } catch (err: any) {
+      clearTimeout(timeout);
+      console.error("Login Error:", err);
       setIsLoading(false);
-      setError('Invalid credentials. Please contact your CEO for access.');
+      setError('System Access Error: ' + (err.message || 'Database connection failed.'));
     }
   };
 
@@ -57,7 +74,8 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
                 type="text" 
                 placeholder="Username" 
                 required
-                className="w-full bg-zinc-950 border border-zinc-800 rounded-2xl py-4 pl-12 pr-4 text-sm focus:outline-none focus:border-amber-500 transition-all placeholder:text-zinc-700"
+                disabled={isLoading}
+                className="w-full bg-zinc-950 border border-zinc-800 rounded-2xl py-4 pl-12 pr-4 text-sm focus:outline-none focus:border-amber-500 transition-all placeholder:text-zinc-700 disabled:opacity-50"
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
               />
@@ -68,7 +86,8 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
                 type="password" 
                 placeholder="Password" 
                 required
-                className="w-full bg-zinc-950 border border-zinc-800 rounded-2xl py-4 pl-12 pr-4 text-sm focus:outline-none focus:border-amber-500 transition-all placeholder:text-zinc-700"
+                disabled={isLoading}
+                className="w-full bg-zinc-950 border border-zinc-800 rounded-2xl py-4 pl-12 pr-4 text-sm focus:outline-none focus:border-amber-500 transition-all placeholder:text-zinc-700 disabled:opacity-50"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
               />
@@ -76,8 +95,9 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
           </div>
 
           {error && (
-            <div className="p-4 bg-rose-500/10 border border-rose-500/20 rounded-xl text-rose-500 text-xs font-bold text-center">
-              {error}
+            <div className="p-4 bg-rose-500/10 border border-rose-500/20 rounded-xl text-rose-500 text-[11px] font-bold flex items-center gap-3">
+              <AlertCircle size={16} className="shrink-0" />
+              <span>{error}</span>
             </div>
           )}
 

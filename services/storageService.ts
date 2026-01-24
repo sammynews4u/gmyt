@@ -12,15 +12,15 @@ export const storageService = {
 
   async setSyncKey(key: string) {
     localStorage.setItem('gmyt_sync_key', key);
-    await this.pullFromCloud();
+    await storageService.pullFromCloud();
   },
 
   async pushToCloud() {
-    const key = await this.getSyncKey();
+    const key = await storageService.getSyncKey();
     if (!key) return;
 
     try {
-      const dump = await this.exportDatabase();
+      const dump = await storageService.exportDatabase();
       const response = await fetch(`/api/sync?key=${key}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -36,12 +36,12 @@ export const storageService = {
   },
 
   async forcePushAll() {
-    await this.pushToCloud();
+    await storageService.pushToCloud();
     return true;
   },
 
   async pullFromCloud(): Promise<boolean> {
-    const key = await this.getSyncKey();
+    const key = await storageService.getSyncKey();
     if (!key) return false;
 
     try {
@@ -49,13 +49,13 @@ export const storageService = {
       const result = await response.json();
       
       if (result.data) {
-        const success = await this.importDatabase(JSON.stringify(result.data));
+        const success = await storageService.importDatabase(JSON.stringify(result.data));
         if (success) {
           localStorage.setItem('gmyt_last_sync', new Date().toISOString());
           return true;
         }
       } else {
-        await this.forcePushAll();
+        await storageService.forcePushAll();
         return true;
       }
     } catch (e) {
@@ -67,7 +67,7 @@ export const storageService = {
   async getDbStatus() {
     await networkDelay(100);
     const lastSync = localStorage.getItem('gmyt_last_sync');
-    const syncKey = await this.getSyncKey();
+    const syncKey = await storageService.getSyncKey();
     return {
       status: syncKey ? 'Cloud-Linked' : 'Local-Only',
       latency: '2ms',
@@ -117,44 +117,44 @@ export const storageService = {
         jobDescription: 'Oversee, manage and ensure full functionality of all ICT systems across the organization.'
       };
       await dbEngine.putBulk(STORES.USERS, [ceo, ictManager]);
-      this.pushToCloud();
+      storageService.pushToCloud();
       return [ceo, ictManager];
     }
     return users;
   },
   async saveUser(user: UserAccount) { 
     await dbEngine.put(STORES.USERS, user); 
-    await this.pushToCloud();
+    await storageService.pushToCloud();
   },
   async deleteUser(id: string) { 
     await dbEngine.delete(STORES.USERS, id); 
-    await this.pushToCloud();
+    await storageService.pushToCloud();
   },
 
   // Tasks
   async getTasks(): Promise<Task[]> { return dbEngine.getAll<Task>(STORES.TASKS); },
   async saveTask(task: Task) { 
     await dbEngine.put(STORES.TASKS, task); 
-    await this.pushToCloud();
+    await storageService.pushToCloud();
   },
   async deleteTask(id: string) { 
     await dbEngine.delete(STORES.TASKS, id); 
-    await this.pushToCloud();
+    await storageService.pushToCloud();
   },
 
   // Expenses (Finances)
   async getExpenses(): Promise<Expense[]> { return dbEngine.getAll<Expense>(STORES.EXPENSES); },
   async saveExpense(expense: Expense) { 
     await dbEngine.put(STORES.EXPENSES, expense); 
-    await this.pushToCloud();
+    await storageService.pushToCloud();
   },
   async updateExpenseStatus(id: string, status: Expense['status']) {
-    const expenses = await this.getExpenses();
+    const expenses = await storageService.getExpenses();
     const item = expenses.find(e => e.id === id);
     if (item) {
       item.status = status;
       await dbEngine.put(STORES.EXPENSES, item);
-      await this.pushToCloud();
+      await storageService.pushToCloud();
     }
   },
 
@@ -162,22 +162,22 @@ export const storageService = {
   async getInventory(): Promise<InventoryItem[]> { return dbEngine.getAll<InventoryItem>(STORES.INVENTORY); },
   async saveInventory(items: InventoryItem[]) { 
     await dbEngine.putBulk(STORES.INVENTORY, items); 
-    await this.pushToCloud();
+    await storageService.pushToCloud();
   },
 
   // Payroll
   async getPayroll(): Promise<Paycheck[]> { return dbEngine.getAll<Paycheck>(STORES.PAYROLL); },
   async savePayroll(payrolls: Paycheck[]) { 
     await dbEngine.putBulk(STORES.PAYROLL, payrolls); 
-    await this.pushToCloud();
+    await storageService.pushToCloud();
   },
   async updatePaycheckStatus(id: string, status: 'Paid') {
-    const payrolls = await this.getPayroll();
+    const payrolls = await storageService.getPayroll();
     const paycheck = payrolls.find(p => p.id === id);
     if (paycheck) {
       paycheck.status = status;
       await dbEngine.put(STORES.PAYROLL, paycheck);
-      await this.pushToCloud();
+      await storageService.pushToCloud();
     }
   },
 
@@ -187,15 +187,15 @@ export const storageService = {
   },
   async createPasswordRequest(request: PasswordChangeRequest) {
     await dbEngine.put(STORES.PASSWORD_REQUESTS, request);
-    await this.pushToCloud();
+    await storageService.pushToCloud();
   },
   async processPasswordRequest(id: string, status: 'Approved' | 'Rejected') {
-    const requests = await this.getPasswordRequests();
+    const requests = await storageService.getPasswordRequests();
     const req = requests.find(r => r.id === id);
     if (req) {
       req.status = status;
       await dbEngine.put(STORES.PASSWORD_REQUESTS, req);
-      await this.pushToCloud();
+      await storageService.pushToCloud();
     }
   },
 
@@ -203,29 +203,29 @@ export const storageService = {
   async getOnboardingDocs(): Promise<OnboardingRecord[]> { return dbEngine.getAll<OnboardingRecord>(STORES.ONBOARDING); },
   async saveOnboardingDoc(doc: OnboardingRecord) { 
     await dbEngine.put(STORES.ONBOARDING, doc); 
-    await this.pushToCloud();
+    await storageService.pushToCloud();
   },
 
   // Attendance
   async getAttendance(): Promise<AttendanceRecord[]> { return dbEngine.getAll<AttendanceRecord>(STORES.ATTENDANCE); },
   async saveAttendanceRecord(record: AttendanceRecord) { 
     await dbEngine.put(STORES.ATTENDANCE, record); 
-    await this.pushToCloud();
+    await storageService.pushToCloud();
   },
 
   // Complaints
   async getComplaints(): Promise<Complaint[]> { return dbEngine.getAll<Complaint>(STORES.COMPLAINTS); },
   async saveComplaint(complaint: Complaint) { 
     await dbEngine.put(STORES.COMPLAINTS, complaint); 
-    await this.pushToCloud();
+    await storageService.pushToCloud();
   },
   async resolveComplaint(id: string) {
-    const complaints = await this.getComplaints();
+    const complaints = await storageService.getComplaints();
     const item = complaints.find(c => c.id === id);
     if (item) {
       item.status = 'Resolved';
       await dbEngine.put(STORES.COMPLAINTS, item);
-      await this.pushToCloud();
+      await storageService.pushToCloud();
     }
   },
 
@@ -233,7 +233,7 @@ export const storageService = {
   async getMeetings(): Promise<MeetingMinutes[]> { return dbEngine.getAll<MeetingMinutes>(STORES.MEETINGS); },
   async saveMeeting(meeting: MeetingMinutes) { 
     await dbEngine.put(STORES.MEETINGS, meeting); 
-    await this.pushToCloud();
+    await storageService.pushToCloud();
   },
 
   // Chats
@@ -242,7 +242,7 @@ export const storageService = {
   },
   async saveMessage(message: ChatMessage) {
     await dbEngine.put(STORES.CHATS, message);
-    await this.pushToCloud();
+    await storageService.pushToCloud();
   },
 
   // Templates

@@ -37,8 +37,19 @@ class IndexedDBEngine {
         });
       };
 
+      request.onblocked = () => {
+        alert("A system upgrade is pending. Please close all other tabs of this application to complete the update.");
+      };
+
       request.onsuccess = () => {
         this.db = request.result;
+        
+        this.db.onversionchange = () => {
+          this.db?.close();
+          this.db = null;
+          window.location.reload();
+        };
+
         resolve(request.result);
       };
 
