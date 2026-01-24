@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { 
   Plus, Search, CheckCircle, Trash2, X, Play, 
@@ -6,7 +7,8 @@ import {
   Target, Bookmark, Clock, AlertTriangle, ShieldCheck,
   ClipboardList, Settings2, Sparkles, Wand2, UserCircle,
   Zap, Cpu, ListChecks, FileInput, Send, Printer, MessageSquare,
-  FileText, AlertCircle, Eye, ThumbsUp, RotateCcw
+  FileText, AlertCircle, Eye, ThumbsUp, RotateCcw,
+  Target as TargetIcon, ArrowRight, Info
 } from 'lucide-react';
 import { Task, UserAccount } from '../types';
 import { storageService } from '../services/storageService';
@@ -26,15 +28,10 @@ export default function TaskBoard({ user, staff }: TaskBoardProps) {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [expandedTaskId, setExpandedTaskId] = useState<string | null>(null);
 
-  // Comment state
   const [newComment, setNewComment] = useState('');
-
-  // Report Modal States
   const [reportingTask, setReportingTask] = useState<Task | null>(null);
   const [reportText, setReportText] = useState('');
   const [isReportModalOpen, setIsReportModalOpen] = useState(false);
-
-  // Decommissioning (Delete) Modal States
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [taskToDelete, setTaskToDelete] = useState<Task | null>(null);
   const [deleteConfirmationText, setDeleteConfirmationText] = useState('');
@@ -42,7 +39,6 @@ export default function TaskBoard({ user, staff }: TaskBoardProps) {
   const isCEO = user.role === 'CEO';
   const isPM = user.role === 'Project Manager';
   const isICT = user.department === 'ICT';
-  // IT Department now included in Management authorization for task assignment and approval
   const isManagement = isCEO || isPM || isICT;
 
   const initialTaskState: Partial<Task> = {
@@ -84,7 +80,7 @@ export default function TaskBoard({ user, staff }: TaskBoardProps) {
   };
 
   const handleAiGenerate = async () => {
-    if (!newTask.role) return alert("Please specify the Job Description first.");
+    if (!newTask.role) return alert("Please specify the Core Objective (Job Description) first.");
     setIsAiGenerating(true);
     const suggestion = await generateTaskSchema(newTask.role, "Optimal performance goals.");
     if (suggestion) {
@@ -97,9 +93,27 @@ export default function TaskBoard({ user, staff }: TaskBoardProps) {
     setIsAiGenerating(false);
   };
 
+  const validateTask = () => {
+    if (!newTask.role?.trim()) return "Job Description (Core Objective) is required.";
+    if (!newTask.responsibleParty?.trim()) return "Responsible Party is required.";
+    if (!newTask.tasksForToday?.trim()) return "Tasks for Today is required.";
+    
+    // PRRR Validation
+    if (!newTask.problem?.description?.trim()) return "PRRR: Problem Identification is required.";
+    if (!newTask.problem?.rootCauseAndConsequences?.trim()) return "PRRR: Root Cause is required.";
+    if (!newTask.problem?.risk?.trim()) return "PRRR: Risk Assessment is required.";
+    
+    // SMART Validation
+    if (!newTask.smart?.specific?.trim()) return "SMART: Specific Goal is required.";
+    if (!newTask.smart?.measurable?.trim()) return "SMART: Measurable Outcome is required.";
+    
+    return null;
+  };
+
   const handleCreateTask = async () => {
-    if (!newTask.role?.trim() || !newTask.responsibleParty?.trim()) {
-      alert("Required: Job Description and Responsible Party.");
+    const error = validateTask();
+    if (error) {
+      alert(error);
       return;
     }
 
@@ -219,19 +233,19 @@ export default function TaskBoard({ user, staff }: TaskBoardProps) {
   );
 
   const renderLargeTextBox = (title: string, content: string, color: string = "amber", icon?: React.ReactNode) => (
-    <div className={`p-5 bg-zinc-950 border border-zinc-800 rounded-3xl space-y-3 h-full shadow-inner`}>
-       <div className="flex items-center gap-2 mb-1">
+    <div className={`p-6 bg-zinc-950/40 border border-zinc-800/60 rounded-[2rem] space-y-3 h-full shadow-inner flex flex-col justify-start`}>
+       <div className="flex items-center gap-2 mb-1 shrink-0">
           {icon && <div className={`text-${color}-500`}>{icon}</div>}
           <span className={`text-[10px] font-black text-zinc-500 uppercase tracking-[0.2em]`}>{title}</span>
        </div>
-       <div className="text-sm font-medium text-zinc-200 leading-relaxed whitespace-pre-wrap">
-          {content || <span className="text-zinc-800 italic">No entry.</span>}
+       <div className="text-[13px] font-medium text-zinc-300 leading-relaxed whitespace-pre-wrap overflow-hidden line-clamp-[8]">
+          {content || <span className="text-zinc-800 italic">No entry provided.</span>}
        </div>
     </div>
   );
 
   return (
-    <div className="space-y-6 relative pb-24 print:bg-white print:p-0">
+    <div className="space-y-8 relative pb-24 print:bg-white print:p-0">
       <style>{`
         @media print {
           body * { visibility: hidden; }
@@ -240,85 +254,92 @@ export default function TaskBoard({ user, staff }: TaskBoardProps) {
         }
       `}</style>
       
-      <div className="flex flex-col xl:flex-row gap-4 justify-between items-start xl:items-center print:hidden">
-        <div className="flex items-center gap-4">
-           <div className="p-3 bg-amber-500/10 rounded-2xl">
-              <ClipboardList className="text-amber-500" size={32} />
+      <div className="flex flex-col xl:flex-row gap-6 justify-between items-start xl:items-center print:hidden">
+        <div className="flex items-center gap-5">
+           <div className="p-4 bg-amber-500/10 rounded-3xl border border-amber-500/20">
+              <ClipboardList className="text-amber-500" size={36} />
            </div>
            <div>
-              <h2 className="text-2xl font-black gold-text uppercase tracking-tight">Strategic Task Board</h2>
-              <p className="text-xs text-zinc-500 font-bold uppercase tracking-widest">
-                 GMYT Framework: PRRR + SMART + SKRC
-                 {isICT && <span className="ml-3 text-blue-500 flex items-center gap-1"><ShieldCheck size={14} /> ICT Administrative Access</span>}
+              <h2 className="text-3xl font-black gold-text uppercase tracking-tight">Strategic Directive Ledger</h2>
+              <p className="text-xs text-zinc-500 font-bold uppercase tracking-[0.3em] flex items-center gap-2">
+                 GMYT Protocol: PRRR + SMART + SKRC
+                 {isICT && <span className="ml-3 text-blue-500 flex items-center gap-1.5"><ShieldCheck size={14} /> System Access: ICT</span>}
               </p>
            </div>
         </div>
-        <div className="flex flex-col sm:flex-row gap-3 w-full xl:w-auto">
-          <div className="relative flex-1 sm:w-64">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-600" size={16} />
+        <div className="flex flex-col sm:flex-row gap-4 w-full xl:w-auto">
+          <div className="relative flex-1 sm:w-80 group">
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-600 group-focus-within:text-amber-500 transition-colors" size={18} />
             <input 
               type="text" 
-              placeholder="Search tasks..." 
-              className="w-full bg-zinc-900 border border-zinc-800 rounded-xl py-2.5 pl-10 pr-4 text-sm focus:border-amber-500 outline-none transition-all"
+              placeholder="Search by directive or personnel..." 
+              className="w-full bg-zinc-900/50 border border-zinc-800 rounded-2xl py-3.5 pl-12 pr-4 text-sm focus:border-amber-500 outline-none transition-all shadow-inner"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
             />
           </div>
-          <button onClick={handlePrint} className="p-3 bg-zinc-800 text-zinc-400 rounded-xl hover:text-white transition-all">
-             <Printer size={18} />
+          <button onClick={handlePrint} className="p-3.5 bg-zinc-900 border border-zinc-800 text-zinc-400 rounded-2xl hover:text-white transition-all shadow-md">
+             <Printer size={20} />
           </button>
           {isManagement && (
-            <button onClick={() => setIsModalOpen(true)} className="px-6 py-2.5 gold-gradient rounded-xl font-black text-black text-xs uppercase tracking-widest flex items-center gap-2">
-              <Plus size={18} /> Deploy Strategy
+            <button onClick={() => setIsModalOpen(true)} className="px-8 py-3.5 gold-gradient rounded-2xl font-black text-black text-xs uppercase tracking-widest flex items-center gap-3 hover:shadow-2xl hover:shadow-amber-500/20 active:scale-95 transition-all">
+              <Plus size={20} /> Deploy Strategic Objective
             </button>
           )}
         </div>
       </div>
 
-      <div className="space-y-4 print-area">
+      <div className="space-y-6 print-area">
         {isLoading ? (
-          <div className="flex items-center justify-center py-24"><Loader2 className="animate-spin text-amber-500" size={40} /></div>
+          <div className="flex flex-col items-center justify-center py-32 space-y-4">
+             <Loader2 className="animate-spin text-amber-500" size={56} />
+             <p className="text-xs font-black text-zinc-600 uppercase tracking-widest">Synchronizing Enterprise Registry...</p>
+          </div>
         ) : filteredTasks.length === 0 ? (
-          <div className="text-center py-24 bg-zinc-900/50 rounded-[3rem] border border-zinc-800 text-zinc-500 italic">No strategic tasks.</div>
+          <div className="text-center py-32 bg-zinc-900/30 rounded-[3.5rem] border border-zinc-800 text-zinc-600 italic font-medium">No strategic objectives found in current filter.</div>
         ) : (
-          <div className="bg-zinc-900 border border-zinc-800 rounded-[2.5rem] overflow-hidden shadow-2xl">
-             <table className="w-full text-left border-collapse">
-                <thead className="bg-zinc-950 text-zinc-500 text-[10px] uppercase font-bold tracking-[0.2em] print:bg-zinc-100">
+          <div className="bg-zinc-900/40 border border-zinc-800 rounded-[3rem] overflow-hidden shadow-2xl backdrop-blur-sm">
+             <table className="w-full text-left border-collapse table-fixed">
+                <thead className="bg-zinc-950 text-zinc-500 text-[11px] uppercase font-black tracking-[0.25em] print:bg-zinc-100">
                    <tr>
-                      <th className="px-8 py-6 w-16 text-center border-r border-zinc-800/50">SN</th>
-                      <th className="px-8 py-6 w-1/5 border-r border-zinc-800/50">Job Description</th>
-                      <th className="px-8 py-6 w-1/4 border-r border-zinc-800/50">Today's Tasks</th>
-                      <th className="px-8 py-6">Strategic Analysis</th>
-                      <th className="px-8 py-6 w-20 text-right print:hidden">Control</th>
+                      <th className="px-10 py-8 w-24 text-center border-r border-zinc-800/50">SN</th>
+                      <th className="px-10 py-8 w-1/4 border-r border-zinc-800/50">Strategic Directive</th>
+                      <th className="px-10 py-8 w-1/4 border-r border-zinc-800/50">Execution Node</th>
+                      <th className="px-10 py-8">Core Analysis (PRRR + SMART)</th>
+                      <th className="px-10 py-8 w-24 text-right print:hidden">View</th>
                    </tr>
                 </thead>
                 <tbody className="divide-y divide-zinc-800">
                    {filteredTasks.map((task) => {
                       const isAssignedToMe = user.name === task.responsibleParty;
-                      const canControl = isAssignedToMe || isManagement;
                       const isAwaiting = task.skrc.status === 'Awaiting Approval';
 
                       return (
                         <React.Fragment key={task.id}>
                            <tr 
-                             className={`hover:bg-zinc-800/30 transition-all cursor-pointer ${expandedTaskId === task.id ? 'bg-amber-500/5' : ''} ${isAwaiting ? 'border-l-4 border-l-blue-500' : ''}`}
+                             className={`hover:bg-zinc-800/40 transition-all cursor-pointer group ${expandedTaskId === task.id ? 'bg-amber-500/5' : ''} ${isAwaiting ? 'border-l-[6px] border-l-blue-500' : ''}`}
                              onClick={() => setExpandedTaskId(expandedTaskId === task.id ? null : task.id)}
                            >
-                              <td className="px-8 py-6 text-center border-r border-zinc-800/50 align-top">
-                                 <div className="w-10 h-10 rounded-xl bg-zinc-950 flex items-center justify-center font-black text-amber-500 shadow-inner text-xs">{task.sn}</div>
+                              <td className="px-10 py-10 text-center border-r border-zinc-800/50 align-top">
+                                 <div className="w-12 h-12 rounded-2xl bg-zinc-950 border border-zinc-800 flex items-center justify-center font-black text-amber-500 shadow-inner group-hover:border-amber-500/30 transition-colors">
+                                    {task.sn}
+                                 </div>
                               </td>
-                              <td className="px-8 py-6 border-r border-zinc-800/50 align-top">
-                                 {renderLargeTextBox("Directive", task.role, "amber")}
-                                 <div className="mt-4 flex items-center gap-2 px-4">
-                                    <span className={`text-[10px] font-black uppercase tracking-widest ${isAssignedToMe ? 'text-amber-500' : 'text-zinc-300'}`}>
+                              <td className="px-10 py-10 border-r border-zinc-800/50 align-top">
+                                 {renderLargeTextBox("Directive Objective", task.role, "amber", <TargetIcon size={12}/>)}
+                                 <div className="mt-6 flex items-center gap-3 px-4">
+                                    <div className="w-8 h-8 rounded-full bg-zinc-950 border border-zinc-800 flex items-center justify-center">
+                                       <UserCircle size={14} className="text-zinc-600" />
+                                    </div>
+                                    <span className={`text-[11px] font-black uppercase tracking-widest ${isAssignedToMe ? 'text-amber-500' : 'text-zinc-400'}`}>
                                        {task.responsibleParty}
                                     </span>
                                  </div>
                               </td>
-                              <td className="px-8 py-6 border-r border-zinc-800/50 align-top">
-                                 {renderLargeTextBox("Execution Node", task.tasksForToday, "blue")}
-                                 <div className="mt-3 flex gap-2">
-                                    <span className={`text-[8px] font-black px-2 py-1 rounded-full border ${
+                              <td className="px-10 py-10 border-r border-zinc-800/50 align-top">
+                                 {renderLargeTextBox("Daily Execution Plan", task.tasksForToday, "blue", <Zap size={12}/>)}
+                                 <div className="mt-6 flex gap-2">
+                                    <span className={`text-[10px] font-black px-4 py-1.5 rounded-full border shadow-sm ${
                                       task.skrc.status === 'Completed' ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-500' : 
                                       task.skrc.status === 'Awaiting Approval' ? 'bg-blue-500/10 border-blue-500/30 text-blue-500' :
                                       'bg-amber-500/10 border-amber-500/30 text-amber-500'
@@ -327,109 +348,149 @@ export default function TaskBoard({ user, staff }: TaskBoardProps) {
                                     </span>
                                  </div>
                               </td>
-                              <td className="px-8 py-6 align-top">
-                                 <div className="grid grid-cols-3 gap-3 h-full min-h-[140px]">
-                                    {renderLargeTextBox("PRRR Identification", task.problem.description, "amber")}
-                                    {renderLargeTextBox("SMART Goal", task.smart.specific, "blue")}
-                                    {renderLargeTextBox("SKRC Results", task.skrc.keyResult || 'Awaiting...', "emerald")}
+                              <td className="px-10 py-10 align-top">
+                                 <div className="grid grid-cols-2 gap-4 h-[240px]">
+                                    {renderLargeTextBox("Problem Identification", task.problem.description, "amber", <AlertTriangle size={12}/>)}
+                                    {renderLargeTextBox("SMART Specific Goal", task.smart.specific, "blue", <TargetIcon size={12}/>)}
                                  </div>
                               </td>
-                              <td className="px-8 py-6 text-right align-top print:hidden">
-                                 {expandedTaskId === task.id ? <ChevronUp size={20} className="text-amber-500" /> : <ChevronDown size={20} className="text-zinc-600" />}
+                              <td className="px-10 py-10 text-right align-top print:hidden">
+                                 <div className="p-3 bg-zinc-900 rounded-2xl border border-zinc-800 group-hover:border-zinc-700 transition-colors inline-block">
+                                    {expandedTaskId === task.id ? <ChevronUp size={22} className="text-amber-500" /> : <ChevronDown size={22} className="text-zinc-600" />}
+                                 </div>
                               </td>
                            </tr>
                            {expandedTaskId === task.id && (
                              <tr className="print:hidden">
-                                <td colSpan={5} className="px-8 pb-12 pt-4 bg-zinc-950/80 border-x border-zinc-800">
-                                   <div className="space-y-8">
-                                      <div className={`bg-zinc-900 border rounded-3xl p-6 flex flex-col md:flex-row items-center justify-between gap-6 ${isAwaiting ? 'border-blue-500/50 shadow-[0_0_20px_rgba(59,130,246,0.1)]' : 'border-zinc-800'}`}>
-                                         <div className="flex items-center gap-4">
-                                            {isAwaiting ? <Eye className="text-blue-500" size={24} /> : <Zap className="text-amber-500" size={24} />}
+                                <td colSpan={5} className="px-10 pb-16 pt-6 bg-zinc-950/80 border-x border-zinc-800">
+                                   <div className="space-y-10">
+                                      {/* Status Action Banner */}
+                                      <div className={`bg-zinc-900/80 backdrop-blur-md border rounded-[2.5rem] p-10 flex flex-col md:flex-row items-center justify-between gap-8 ${isAwaiting ? 'border-blue-500/50 shadow-[0_0_30px_rgba(59,130,246,0.1)]' : 'border-zinc-800 shadow-2xl'}`}>
+                                         <div className="flex items-center gap-6">
+                                            <div className={`p-5 rounded-3xl ${isAwaiting ? 'bg-blue-500/10 text-blue-500' : 'bg-amber-500/10 text-amber-500'}`}>
+                                               {isAwaiting ? <Eye size={32} /> : <Zap size={32} />}
+                                            </div>
                                             <div>
-                                               <h4 className="text-xs font-black text-white uppercase tracking-widest">
-                                                  {isAwaiting ? 'Verification Protocol' : 'Execution Hub'}
+                                               <h4 className="text-sm font-black text-white uppercase tracking-[0.3em]">
+                                                  {isAwaiting ? 'Verification Protocol' : 'Mission Status'}
                                                </h4>
-                                               <p className="text-[10px] text-zinc-500 uppercase">
-                                                  Status: <span className={isAwaiting ? 'text-blue-500' : 'text-amber-500'}>{task.skrc.status}</span>
+                                               <p className={`text-[11px] mt-1 font-bold uppercase tracking-widest ${isAwaiting ? 'text-blue-500' : 'text-zinc-500'}`}>
+                                                  Current: {task.skrc.status}
                                                </p>
                                             </div>
                                          </div>
-                                         <div className="flex gap-4">
+                                         
+                                         <div className="flex flex-wrap gap-4 justify-center">
                                             {isManagement && isAwaiting && (
                                               <>
                                                 <button 
                                                   onClick={(e) => { e.stopPropagation(); handleApproveTask(task); }} 
-                                                  className="px-8 py-3 bg-emerald-600 text-white font-black rounded-xl text-[10px] uppercase tracking-widest flex items-center gap-2 hover:bg-emerald-500 transition-all"
+                                                  className="px-10 py-4 bg-emerald-600 text-white font-black rounded-2xl text-[11px] uppercase tracking-widest flex items-center gap-3 hover:bg-emerald-500 transition-all shadow-xl shadow-emerald-600/20"
                                                 >
-                                                   <ThumbsUp size={14} /> Verify & Complete
+                                                   <ThumbsUp size={16} /> Finalize Objective
                                                 </button>
                                                 <button 
                                                   onClick={(e) => { e.stopPropagation(); handleRejectTask(task); }} 
-                                                  className="px-8 py-3 bg-rose-600/10 text-rose-500 border border-rose-500/20 font-black rounded-xl text-[10px] uppercase tracking-widest flex items-center gap-2 hover:bg-rose-600 hover:text-white transition-all"
+                                                  className="px-10 py-4 bg-rose-600/10 text-rose-500 border border-rose-500/20 font-black rounded-2xl text-[11px] uppercase tracking-widest flex items-center gap-3 hover:bg-rose-600 hover:text-white transition-all shadow-xl"
                                                 >
-                                                   <RotateCcw size={14} /> Request Revision
+                                                   <RotateCcw size={16} /> Request Revision
                                                 </button>
                                               </>
                                             )}
 
                                             {isAssignedToMe && !task.skrc.isStarted && (
-                                              <button onClick={(e) => { e.stopPropagation(); handleStartTask(task); }} className="px-8 py-3 bg-blue-600 text-white font-black rounded-xl text-[10px] uppercase tracking-widest">Start Task</button>
+                                              <button onClick={(e) => { e.stopPropagation(); handleStartTask(task); }} className="px-12 py-4 bg-blue-600 text-white font-black rounded-2xl text-[11px] uppercase tracking-widest hover:scale-105 transition-all shadow-xl shadow-blue-600/20">Acknowledge & Start</button>
                                             )}
                                             {isAssignedToMe && task.skrc.isStarted && task.skrc.status === 'Ongoing' && (
-                                              <button onClick={(e) => { e.stopPropagation(); handleInitiateDone(task); }} className="px-8 py-3 bg-emerald-600 text-white font-black rounded-xl text-[10px] uppercase tracking-widest">Submit for Approval</button>
+                                              <button onClick={(e) => { e.stopPropagation(); handleInitiateDone(task); }} className="px-12 py-4 bg-emerald-600 text-white font-black rounded-2xl text-[11px] uppercase tracking-widest hover:scale-105 transition-all shadow-xl shadow-emerald-600/20">Submit Completion Report</button>
                                             )}
                                             {isAssignedToMe && isAwaiting && (
-                                              <div className="px-6 py-3 bg-zinc-800 text-blue-500 font-black rounded-xl text-[9px] uppercase tracking-widest border border-blue-500/20">
-                                                Pending Management Verification
+                                              <div className="px-8 py-4 bg-zinc-800 text-blue-500 font-black rounded-2xl text-[10px] uppercase tracking-[0.2em] border border-blue-500/20 flex items-center gap-3">
+                                                <Clock size={16}/> Awaiting Executive Approval
                                               </div>
                                             )}
 
                                             {isManagement && (
-                                              <button onClick={(e) => { e.stopPropagation(); handleDeleteTrigger(task); }} className="p-3 bg-rose-500/10 text-rose-500 rounded-xl hover:bg-rose-500 hover:text-white transition-all"><Trash2 size={18} /></button>
+                                              <button onClick={(e) => { e.stopPropagation(); handleDeleteTrigger(task); }} className="p-4 bg-rose-500/10 text-rose-500 rounded-2xl hover:bg-rose-500 hover:text-white transition-all border border-rose-500/20" title="Decommission Task"><Trash2 size={20} /></button>
                                             )}
                                          </div>
                                       </div>
 
-                                      <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
-                                         <div className="space-y-4">
-                                            <h4 className="text-[10px] font-black text-amber-500 uppercase tracking-widest flex items-center gap-2"><MessageSquare size={14}/> Communication & Complaints</h4>
-                                            <div className="bg-zinc-900 border border-zinc-800 rounded-3xl p-6 space-y-4 max-h-60 overflow-y-auto no-scrollbar">
-                                               {(task.comments || []).map((c, i) => (
-                                                  <div key={i} className="space-y-1 border-b border-zinc-800 pb-2 last:border-0">
-                                                     <div className="flex justify-between text-[9px] font-bold">
-                                                        <span className="text-amber-500">{c.user}</span>
-                                                        <span className="text-zinc-500">{c.date}</span>
+                                      {/* Full Details Grid */}
+                                      <div className="grid grid-cols-1 xl:grid-cols-2 gap-12">
+                                         {/* PRRR & SMART Left Side */}
+                                         <div className="space-y-10">
+                                            <div className="space-y-5">
+                                               <h4 className="text-[12px] font-black text-amber-500 uppercase tracking-[0.3em] flex items-center gap-3">
+                                                  <Info size={16}/> Strategic Breakdown
+                                               </h4>
+                                               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                                  {renderLargeTextBox("Root Cause", task.problem.rootCauseAndConsequences, "amber")}
+                                                  {renderLargeTextBox("Risk Assessment", task.problem.risk, "rose")}
+                                                  {renderLargeTextBox("Measurable Metric", task.smart.measurable, "blue")}
+                                                  {renderLargeTextBox("Deadline Detail", task.deadline + " | " + task.smart.timeBound, "emerald")}
+                                               </div>
+                                            </div>
+
+                                            <div className="space-y-5">
+                                               <h4 className="text-[12px] font-black text-blue-500 uppercase tracking-[0.3em] flex items-center gap-3">
+                                                  <MessageSquare size={16}/> Executive-Staff Dialogue
+                                               </h4>
+                                               <div className="bg-zinc-900 border border-zinc-800 rounded-[2.5rem] p-8 space-y-6 max-h-[400px] overflow-y-auto no-scrollbar shadow-inner">
+                                                  {(task.comments || []).map((c, i) => (
+                                                     <div key={i} className="space-y-2 border-b border-zinc-800/50 pb-4 last:border-0">
+                                                        <div className="flex justify-between items-center text-[10px] font-black uppercase">
+                                                           <span className="text-amber-500 flex items-center gap-2"><UserCircle size={12}/> {c.user}</span>
+                                                           <span className="text-zinc-600">{c.date}</span>
+                                                        </div>
+                                                        <p className="text-[13px] text-zinc-300 leading-relaxed pl-5 border-l border-zinc-800">{c.text}</p>
                                                      </div>
-                                                     <p className="text-xs text-zinc-300 mt-1">{c.text}</p>
+                                                  ))}
+                                                  <div className="pt-4 flex gap-3">
+                                                     <input 
+                                                       className="flex-1 bg-zinc-950 border border-zinc-800 rounded-2xl px-6 py-3.5 text-xs text-white outline-none focus:border-amber-500 shadow-inner"
+                                                       placeholder="Add a strategic note or update..."
+                                                       value={newComment}
+                                                       onChange={e => setNewComment(e.target.value)}
+                                                     />
+                                                     <button onClick={() => handleAddComment(task)} className="p-3.5 bg-amber-500 text-black rounded-2xl hover:scale-110 transition-all shadow-lg shadow-amber-500/20"><Send size={18}/></button>
                                                   </div>
-                                               ))}
-                                               <div className="pt-2 flex gap-2">
-                                                  <input 
-                                                    className="flex-1 bg-zinc-950 border border-zinc-800 rounded-xl px-4 py-2 text-xs text-white outline-none focus:border-amber-500"
-                                                    placeholder="Lodge complaint or update PM..."
-                                                    value={newComment}
-                                                    onChange={e => setNewComment(e.target.value)}
-                                                  />
-                                                  <button onClick={() => handleAddComment(task)} className="p-2 bg-amber-500 text-black rounded-xl hover:scale-105 transition-all"><Send size={14}/></button>
                                                </div>
                                             </div>
                                          </div>
-                                         <div className="space-y-4">
-                                            <h4 className="text-[10px] font-black text-emerald-500 uppercase tracking-widest flex items-center gap-2"><FileInput size={14}/> Mission Reflection</h4>
-                                            {renderLargeTextBox("Completion Report", task.skrc.report || "No report submitted yet.", "emerald", <FileText size={10}/>)}
+
+                                         {/* Report & Remarks Right Side */}
+                                         <div className="space-y-10">
+                                            <div className="space-y-5">
+                                               <h4 className="text-[12px] font-black text-emerald-500 uppercase tracking-[0.3em] flex items-center gap-3">
+                                                  <FileInput size={16}/> Outcome & Reflection
+                                               </h4>
+                                               <div className="h-[280px]">
+                                                  {renderLargeTextBox("Staff Completion Report", task.skrc.report || "Awaiting submission of execution report.", "emerald", <FileText size={14}/>)}
+                                               </div>
+                                            </div>
+
                                             {isManagement && (
-                                               <div className="space-y-2">
-                                                  <label className="text-[9px] font-bold text-zinc-600 uppercase">Management Appraisal / Remarks</label>
-                                                  <textarea 
-                                                     className="w-full bg-zinc-950 border border-zinc-800 rounded-xl p-4 text-xs text-zinc-300 outline-none focus:border-amber-500"
-                                                     placeholder="Provide appraisal or feedback on this task execution..."
-                                                     value={task.lineRemarks}
-                                                     onChange={async (e) => {
-                                                        const updatedTask = { ...task, lineRemarks: e.target.value };
-                                                        await storageService.saveTask(updatedTask);
-                                                        setTasks(tasks.map(t => t.id === task.id ? updatedTask : t));
-                                                     }}
-                                                  />
+                                               <div className="space-y-5">
+                                                  <h4 className="text-[12px] font-black text-zinc-400 uppercase tracking-[0.3em] flex items-center gap-3">
+                                                     <ShieldCheck size={16}/> Executive appraisal
+                                                  </h4>
+                                                  <div className="relative group">
+                                                     <textarea 
+                                                        rows={5}
+                                                        className="w-full bg-zinc-950 border border-zinc-800 rounded-[2rem] p-8 text-sm text-zinc-300 outline-none focus:border-amber-500 shadow-inner transition-all leading-relaxed"
+                                                        placeholder="Provide formal feedback or appraisal remarks here..."
+                                                        value={task.lineRemarks}
+                                                        onChange={async (e) => {
+                                                           const updatedTask = { ...task, lineRemarks: e.target.value };
+                                                           await storageService.saveTask(updatedTask);
+                                                           setTasks(tasks.map(t => t.id === task.id ? updatedTask : t));
+                                                        }}
+                                                     />
+                                                     <div className="absolute top-4 right-4 text-zinc-800 group-focus-within:text-amber-500/30 transition-colors">
+                                                        <Settings2 size={24} />
+                                                     </div>
+                                                  </div>
                                                </div>
                                             )}
                                          </div>
@@ -447,33 +508,139 @@ export default function TaskBoard({ user, staff }: TaskBoardProps) {
         )}
       </div>
 
+      {/* Deployment Modal - ONE TASK PER FORM Focus */}
+      {isModalOpen && (
+        <div className="fixed inset-0 z-[150] flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/98 backdrop-blur-2xl" onClick={() => setIsModalOpen(false)}></div>
+          <div className="relative w-full max-w-5xl bg-zinc-950 border border-zinc-800 rounded-[4rem] p-12 md:p-16 max-h-[95vh] overflow-y-auto no-scrollbar shadow-[0_0_100px_rgba(0,0,0,0.5)] animate-in zoom-in slide-in-from-bottom-10 duration-700">
+             <div className="flex justify-between items-center mb-16">
+               <div className="flex items-center gap-6">
+                  <div className="p-5 bg-amber-500/10 rounded-[2rem] border border-amber-500/20 text-amber-500">
+                     <TargetIcon size={40} />
+                  </div>
+                  <div>
+                    <h2 className="text-4xl font-black text-white uppercase tracking-tight">Strategy Deployment</h2>
+                    <p className="text-[11px] text-zinc-500 mt-2 uppercase tracking-[0.4em] font-bold">Persistence Node: Strategic Objective Master</p>
+                  </div>
+               </div>
+               <button onClick={() => setIsModalOpen(false)} className="p-5 bg-zinc-900 border border-zinc-800 rounded-[2rem] text-zinc-500 hover:text-white transition-all hover:bg-zinc-800 hover:rotate-90"><X size={32}/></button>
+             </div>
+
+             <div className="space-y-16">
+                {/* Section 1: Core Identification */}
+                <div className="space-y-10">
+                   <div className="flex items-center gap-4 border-l-4 border-amber-500 pl-6">
+                      <h3 className="text-lg font-black text-white uppercase tracking-widest">01. Objective Identification</h3>
+                   </div>
+                   
+                   <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
+                      <div className="space-y-3">
+                         <label className="text-[11px] font-black text-zinc-500 uppercase tracking-widest ml-1">Strategic Assignee</label>
+                         <select className="w-full bg-zinc-900/50 border border-zinc-800 p-5 rounded-[1.5rem] text-sm font-bold text-white shadow-inner focus:border-amber-500 outline-none" value={newTask.responsibleParty} onChange={e => handleStaffSelect(e.target.value)}>
+                            <option value="">Select Responsible Node...</option>
+                            {staff.map(s => <option key={s.id} value={s.id}>{s.name} ({s.position || s.role})</option>)}
+                         </select>
+                      </div>
+                      <div className="space-y-3">
+                         <label className="text-[11px] font-black text-zinc-500 uppercase tracking-widest ml-1">Deadline Date</label>
+                         <input type="date" className="w-full bg-zinc-900/50 border border-zinc-800 p-5 rounded-[1.5rem] text-sm text-white shadow-inner focus:border-emerald-500 outline-none font-bold" value={newTask.deadline} onChange={e => setNewTask({...newTask, deadline: e.target.value})} />
+                      </div>
+                      <div className="md:col-span-2 space-y-3">
+                         <label className="text-[11px] font-black text-zinc-500 uppercase tracking-widest ml-1">Core Objective (Job Description Context)</label>
+                         <textarea rows={3} className="w-full bg-zinc-900/50 border border-zinc-800 p-8 rounded-[2rem] text-sm text-white shadow-inner focus:border-amber-500 outline-none transition-all leading-relaxed" value={newTask.role} onChange={e => setNewTask({...newTask, role: e.target.value})} placeholder="Define the core strategic objective for this session..." />
+                      </div>
+                   </div>
+                </div>
+
+                {/* Section 2: PRRR Framework */}
+                <div className="space-y-10">
+                   <div className="flex items-center justify-between border-l-4 border-rose-500 pl-6">
+                      <h3 className="text-lg font-black text-white uppercase tracking-widest">02. PRRR Analysis (Mandatory)</h3>
+                      <button onClick={handleAiGenerate} disabled={isAiGenerating || !newTask.role} className="px-6 py-2 bg-zinc-900 border border-zinc-800 rounded-xl text-[10px] font-black text-amber-500 uppercase tracking-widest flex items-center gap-2 hover:bg-amber-500 hover:text-black transition-all disabled:opacity-30">
+                         {isAiGenerating ? <Loader2 className="animate-spin" size={14}/> : <><Wand2 size={14} /> Refine with AI</>}
+                      </button>
+                   </div>
+                   
+                   <div className="space-y-10">
+                      <div className="space-y-3">
+                         <label className="text-[11px] font-black text-rose-500 uppercase tracking-widest ml-1 flex items-center gap-2"><Info size={14}/> Problem Identification (Detailed Paragraph)</label>
+                         <textarea rows={5} className="w-full bg-zinc-950 border border-zinc-800 p-8 rounded-[2.5rem] text-sm text-zinc-300 shadow-inner focus:border-rose-500 outline-none transition-all leading-relaxed" placeholder="Identify and describe the core business problem this task addresses..." value={newTask.problem?.description} onChange={e => setNewTask({...newTask, problem: {...newTask.problem!, description: e.target.value}})} />
+                      </div>
+                      
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
+                         <div className="space-y-3">
+                            <label className="text-[11px] font-black text-amber-500 uppercase tracking-widest ml-1">Root Cause & Consequences</label>
+                            <textarea rows={5} className="w-full bg-zinc-950 border border-zinc-800 p-8 rounded-[2rem] text-sm text-zinc-300 shadow-inner focus:border-amber-500 outline-none leading-relaxed" placeholder="What is the underlying cause?" value={newTask.problem?.rootCauseAndConsequences} onChange={e => setNewTask({...newTask, problem: {...newTask.problem!, rootCauseAndConsequences: e.target.value}})} />
+                         </div>
+                         <div className="space-y-3">
+                            <label className="text-[11px] font-black text-rose-500 uppercase tracking-widest ml-1">Operational Risk Assessment</label>
+                            <textarea rows={5} className="w-full bg-zinc-950 border border-zinc-800 p-8 rounded-[2rem] text-sm text-zinc-300 shadow-inner focus:border-rose-500 outline-none leading-relaxed" placeholder="What are the risks if ignored?" value={newTask.problem?.risk} onChange={e => setNewTask({...newTask, problem: {...newTask.problem!, risk: e.target.value}})} />
+                         </div>
+                      </div>
+                   </div>
+                </div>
+
+                {/* Section 3: SMART Execution */}
+                <div className="space-y-10">
+                   <div className="flex items-center gap-4 border-l-4 border-blue-500 pl-6">
+                      <h3 className="text-lg font-black text-white uppercase tracking-widest">03. SMART Execution Hub</h3>
+                   </div>
+                   
+                   <div className="space-y-10">
+                      <div className="space-y-3">
+                         <label className="text-[11px] font-black text-blue-500 uppercase tracking-widest ml-1">Tasks for Today (Execution Steps)</label>
+                         <textarea rows={4} className="w-full bg-zinc-950 border border-zinc-800 p-8 rounded-[2rem] text-sm text-white shadow-inner focus:border-blue-500 outline-none leading-relaxed" placeholder="1. Detailed step one... 2. Detailed step two..." value={newTask.tasksForToday} onChange={e => setNewTask({...newTask, tasksForToday: e.target.value})} />
+                      </div>
+
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
+                         <div className="space-y-3">
+                            <label className="text-[11px] font-black text-blue-500 uppercase tracking-widest ml-1">Specific Goal Definition</label>
+                            <textarea rows={4} className="w-full bg-zinc-950 border border-zinc-800 p-8 rounded-[2rem] text-sm text-zinc-300 shadow-inner focus:border-blue-500 outline-none" value={newTask.smart?.specific} onChange={e => setNewTask({...newTask, smart: {...newTask.smart!, specific: e.target.value}})} />
+                         </div>
+                         <div className="space-y-3">
+                            <label className="text-[11px] font-black text-emerald-500 uppercase tracking-widest ml-1">Measurable KPI / Outcome</label>
+                            <textarea rows={4} className="w-full bg-zinc-950 border border-zinc-800 p-8 rounded-[2rem] text-sm text-zinc-300 shadow-inner focus:border-emerald-500 outline-none" value={newTask.smart?.measurable} onChange={e => setNewTask({...newTask, smart: {...newTask.smart!, measurable: e.target.value}})} />
+                         </div>
+                      </div>
+                   </div>
+                </div>
+
+                <div className="pt-16 border-t border-zinc-900 flex flex-col sm:flex-row gap-8">
+                   <button onClick={handleCreateTask} className="flex-1 py-7 gold-gradient text-black font-black rounded-[2.5rem] shadow-2xl hover:scale-[1.02] active:scale-95 transition-all uppercase tracking-[0.25em] text-sm flex items-center justify-center gap-4 group">
+                      <RocketIcon className="group-hover:translate-y-[-4px] transition-transform" /> Commit Strategic objective
+                   </button>
+                   <button onClick={() => setIsModalOpen(false)} className="px-16 py-7 bg-zinc-900 text-zinc-500 font-black rounded-[2.5rem] hover:bg-zinc-800 hover:text-white transition-all uppercase text-[11px] tracking-widest border border-zinc-800">
+                      Abort Deployment
+                   </button>
+                </div>
+             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Re-using other modals (Delete, Report) as they are standard functionality */}
       {isDeleteModalOpen && taskToDelete && (
         <div className="fixed inset-0 z-[250] flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-black/95 backdrop-blur-xl" onClick={() => setIsDeleteModalOpen(false)}></div>
-          <div className="relative w-full max-w-xl bg-zinc-950 border border-rose-500/30 rounded-[3rem] p-10 shadow-2xl animate-in zoom-in duration-300">
-             <div className="flex items-center gap-6 mb-8">
-               <div className="p-5 bg-rose-500/10 rounded-[2rem] border border-rose-500/20 text-rose-500">
-                  {/* Fixed typo in prop from size(40} to size={40} */}
+          <div className="absolute inset-0 bg-black/98 backdrop-blur-xl" onClick={() => setIsDeleteModalOpen(false)}></div>
+          <div className="relative w-full max-w-xl bg-zinc-950 border border-rose-500/30 rounded-[3rem] p-12 shadow-2xl animate-in zoom-in duration-300">
+             <div className="flex items-center gap-6 mb-10">
+               <div className="p-6 bg-rose-500/10 rounded-3xl border border-rose-500/20 text-rose-500">
                   <ShieldAlert size={40} />
                </div>
                <div>
                   <h2 className="text-2xl font-black text-white uppercase tracking-tight">Decommissioning Protocol</h2>
-                  <p className="text-xs text-rose-500 font-bold uppercase tracking-widest mt-1">Authorized Access Only</p>
+                  <p className="text-xs text-rose-500 font-bold uppercase tracking-widest mt-1">Strategic Clearance Required</p>
                </div>
              </div>
              <div className="space-y-6">
-                <div className="p-6 bg-zinc-900/50 border border-zinc-800 rounded-2xl space-y-4">
-                   <div>
+                <div className="p-8 bg-zinc-900/50 border border-zinc-800 rounded-3xl space-y-4">
+                   <div className="flex justify-between items-center border-b border-zinc-800 pb-3">
                       <span className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">Target Entry SN</span>
-                      <p className="text-lg font-black text-white mt-1">#{taskToDelete.sn}</p>
+                      <p className="text-lg font-black text-white">#{taskToDelete.sn}</p>
                    </div>
-                   <div>
-                      <span className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">Directive Anchor</span>
-                      <p className="text-sm font-medium text-zinc-300 mt-1 line-clamp-2 italic">"{taskToDelete.role}"</p>
-                   </div>
-                   <div>
-                      <span className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">Assigned Node</span>
-                      <p className="text-sm font-black text-amber-500 mt-1 uppercase">{taskToDelete.responsibleParty}</p>
+                   <div className="space-y-2 pt-2">
+                      <span className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">Objective Title</span>
+                      <p className="text-[13px] font-medium text-zinc-300 line-clamp-2 italic leading-relaxed">"{taskToDelete.role}"</p>
                    </div>
                 </div>
                 <div className="space-y-3">
@@ -481,7 +648,7 @@ export default function TaskBoard({ user, staff }: TaskBoardProps) {
                    <input 
                      type="text" 
                      autoFocus
-                     className="w-full bg-zinc-950 border border-rose-500/20 rounded-2xl py-4 px-6 text-sm text-rose-500 font-black tracking-widest outline-none focus:border-rose-500/50 transition-all placeholder:text-zinc-800"
+                     className="w-full bg-zinc-950 border border-rose-500/30 rounded-2xl py-5 px-8 text-sm text-rose-500 font-black tracking-[0.3em] outline-none focus:border-rose-500 shadow-inner transition-all placeholder:text-zinc-900"
                      placeholder="CONFIRMATION KEY"
                      value={deleteConfirmationText}
                      onChange={(e) => setDeleteConfirmationText(e.target.value.toUpperCase())}
@@ -491,16 +658,11 @@ export default function TaskBoard({ user, staff }: TaskBoardProps) {
                    <button 
                      onClick={executeDeleteTask}
                      disabled={deleteConfirmationText !== 'DELETE' || isUpdatingTask === taskToDelete.id}
-                     className="flex-1 py-5 bg-rose-600 text-white font-black rounded-2xl uppercase tracking-widest text-xs shadow-lg shadow-rose-600/20 hover:bg-rose-500 transition-all disabled:opacity-20 disabled:grayscale"
+                     className="flex-1 py-5 bg-rose-600 text-white font-black rounded-2xl uppercase tracking-widest text-xs shadow-lg shadow-rose-600/20 hover:bg-rose-500 transition-all disabled:opacity-20"
                    >
-                      {isUpdatingTask === taskToDelete.id ? <Loader2 className="animate-spin" size={18} /> : "Decommission Entry"}
+                      {isUpdatingTask === taskToDelete.id ? <Loader2 className="animate-spin" size={18} /> : "Destroy Entry"}
                    </button>
-                   <button 
-                     onClick={() => setIsDeleteModalOpen(false)}
-                     className="px-8 py-5 bg-zinc-900 text-zinc-400 font-black rounded-2xl uppercase tracking-widest text-xs border border-zinc-800 hover:text-white transition-all"
-                   >
-                      Abort
-                   </button>
+                   <button onClick={() => setIsDeleteModalOpen(false)} className="px-8 py-5 bg-zinc-900 text-zinc-400 font-black rounded-2xl uppercase tracking-widest text-xs border border-zinc-800">Cancel</button>
                 </div>
              </div>
           </div>
@@ -509,80 +671,34 @@ export default function TaskBoard({ user, staff }: TaskBoardProps) {
 
       {isReportModalOpen && reportingTask && (
         <div className="fixed inset-0 z-[200] flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-black/95 backdrop-blur-md" onClick={() => setIsReportModalOpen(false)}></div>
-          <div className="relative w-full max-w-2xl bg-zinc-950 border border-zinc-800 rounded-[3rem] p-8 shadow-2xl animate-in zoom-in duration-300">
-             <div className="flex justify-between items-center mb-8">
+          <div className="absolute inset-0 bg-black/98 backdrop-blur-md" onClick={() => setIsReportModalOpen(false)}></div>
+          <div className="relative w-full max-w-2xl bg-zinc-950 border border-zinc-800 rounded-[3rem] p-10 shadow-2xl animate-in zoom-in duration-300">
+             <div className="flex justify-between items-center mb-10">
                <div className="flex items-center gap-6">
-                 <CheckCircle className="text-emerald-500" size={32} />
+                 <div className="p-4 bg-emerald-500/10 rounded-2xl border border-emerald-500/20 text-emerald-500">
+                    <CheckCircle size={32} />
+                 </div>
                  <div>
-                   <h2 className="text-2xl font-black text-white uppercase tracking-tight">Strategy Realization</h2>
-                   <p className="text-xs text-zinc-500 mt-1 uppercase tracking-widest">Submit Findings for Management Review</p>
+                   <h2 className="text-2xl font-black text-white uppercase tracking-tight">Mission Realization</h2>
+                   <p className="text-xs text-zinc-500 mt-1 uppercase tracking-[0.2em] font-bold">Report Findings for Executive Review</p>
                  </div>
                </div>
                <button onClick={() => setIsReportModalOpen(false)} className="p-4 bg-zinc-900 rounded-3xl text-zinc-500 hover:text-white"><X size={24}/></button>
              </div>
-             <div className="space-y-6">
-                <div className="space-y-2">
-                   <label className="text-[10px] font-black text-zinc-600 uppercase">Execution Outcomes & Strategic Learnings</label>
+             <div className="space-y-8">
+                <div className="space-y-3">
+                   <label className="text-[11px] font-black text-zinc-600 uppercase tracking-widest ml-1">Execution Findings (Detailed Paragraph)</label>
                    <textarea 
-                     rows={6}
-                     placeholder="Detail your results, attainment of SMART goals, and any challenges faced..." 
-                     className="w-full bg-zinc-950 border border-zinc-800 p-6 rounded-[2rem] text-sm focus:border-emerald-500 outline-none text-white leading-relaxed" 
+                     rows={8}
+                     placeholder="Provide a comprehensive breakdown of your results, achievement of SMART goals, and critical challenges faced during this execution phase..." 
+                     className="w-full bg-zinc-950 border border-zinc-800 p-8 rounded-[2rem] text-sm focus:border-emerald-500 outline-none text-zinc-200 leading-relaxed shadow-inner" 
                      value={reportText} 
                      onChange={e => setReportText(e.target.value)} 
                    />
                 </div>
-                <button onClick={handleSubmitReport} className="w-full py-5 bg-blue-600 text-white font-black rounded-2xl uppercase tracking-widest text-xs flex items-center justify-center gap-3 hover:shadow-lg hover:shadow-blue-600/20 transition-all">
-                   <Send size={18} /> Dispatch for Management Verification
+                <button onClick={handleSubmitReport} className="w-full py-6 bg-blue-600 text-white font-black rounded-2xl uppercase tracking-widest text-[11px] flex items-center justify-center gap-4 hover:shadow-2xl hover:shadow-blue-600/30 transition-all">
+                   <Send size={20} /> Transmit for Executive Verification
                 </button>
-             </div>
-          </div>
-        </div>
-      )}
-
-      {isModalOpen && (
-        <div className="fixed inset-0 z-[150] flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-black/95 backdrop-blur-md" onClick={() => setIsModalOpen(false)}></div>
-          <div className="relative w-full max-w-4xl bg-zinc-950 border border-zinc-800 rounded-[3rem] p-10 max-h-[90vh] overflow-y-auto no-scrollbar shadow-2xl">
-             <div className="flex justify-between items-center mb-10">
-               <h2 className="text-3xl font-black text-white uppercase tracking-tight">Strategy Node Deployment</h2>
-               <button onClick={() => setIsModalOpen(false)} className="p-4 bg-zinc-900 rounded-3xl text-zinc-500 hover:text-white transition-all hover:bg-zinc-800"><X size={28}/></button>
-             </div>
-             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                <div className="space-y-4">
-                   <label className="text-[11px] font-black text-zinc-500 uppercase">Strategic Assignee</label>
-                   <select className="w-full bg-zinc-950 border border-zinc-800 p-4 rounded-xl text-sm font-bold text-white shadow-inner" value={newTask.responsibleParty} onChange={e => {
-                      const staffId = e.target.value;
-                      handleStaffSelect(staffId);
-                   }}>
-                      <option value="">Select Assignee...</option>
-                      {staff.map(s => <option key={s.id} value={s.id}>{s.name} ({s.position || s.role})</option>)}
-                   </select>
-                </div>
-                <div className="space-y-4">
-                   <label className="text-[11px] font-black text-zinc-500 uppercase">Today's Specific Tasks (Numbered)</label>
-                   <textarea rows={2} className="w-full bg-zinc-950 border border-zinc-800 p-4 rounded-xl text-sm text-white shadow-inner" value={newTask.tasksForToday} onChange={e => setNewTask({...newTask, tasksForToday: e.target.value})} placeholder="1. Task one... 2. Task two..." />
-                </div>
-             </div>
-             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-8">
-                <div className="space-y-4 bg-zinc-900 p-6 rounded-2xl border border-zinc-800">
-                   <h4 className="text-[10px] font-black text-amber-500 uppercase">PRRR Identification</h4>
-                   <textarea className="w-full bg-zinc-950 border border-zinc-800 p-3 rounded-xl text-xs text-white" placeholder="Describe the problem..." value={newTask.problem?.description} onChange={e => setNewTask({...newTask, problem: {...newTask.problem!, description: e.target.value}})} />
-                </div>
-                <div className="space-y-4 bg-zinc-900 p-6 rounded-2xl border border-zinc-800">
-                   <h4 className="text-[10px] font-black text-blue-500 uppercase">SMART Goal</h4>
-                   <textarea className="w-full bg-zinc-950 border border-zinc-800 p-3 rounded-xl text-xs text-white" placeholder="Specific goal..." value={newTask.smart?.specific} onChange={e => setNewTask({...newTask, smart: {...newTask.smart!, specific: e.target.value}})} />
-                </div>
-                <div className="space-y-4 bg-zinc-900 p-6 rounded-2xl border border-zinc-800">
-                   <h4 className="text-[10px] font-black text-emerald-500 uppercase">Target Results</h4>
-                   <textarea className="w-full bg-zinc-950 border border-zinc-800 p-3 rounded-xl text-xs text-white" placeholder="Expected outcome..." value={newTask.skrc?.keyResult} onChange={e => setNewTask({...newTask, skrc: {...newTask.skrc!, keyResult: e.target.value}})} />
-                </div>
-             </div>
-             <div className="mt-8 flex gap-4">
-                <button onClick={handleAiGenerate} disabled={isAiGenerating} className="px-8 py-3 bg-amber-500/10 border border-amber-500/30 text-amber-500 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-amber-500 hover:text-black transition-all">
-                   {isAiGenerating ? <Loader2 className="animate-spin" size={16}/> : <><Wand2 size={16} /> AI Strategy Engine</>}
-                </button>
-                <button onClick={handleCreateTask} className="flex-1 py-4 gold-gradient text-black font-black rounded-xl uppercase tracking-widest text-xs shadow-xl shadow-amber-500/10 hover:scale-[1.01] transition-all">Deploy Strategy Ledger</button>
              </div>
           </div>
         </div>
@@ -590,3 +706,20 @@ export default function TaskBoard({ user, staff }: TaskBoardProps) {
     </div>
   );
 }
+
+const RocketIcon = ({ className }: { className?: string }) => (
+   <svg 
+     xmlns="http://www.w3.org/2000/svg" 
+     width="20" 
+     height="20" 
+     viewBox="0 0 24 24" 
+     fill="none" 
+     stroke="currentColor" 
+     strokeWidth="2.5" 
+     strokeLinecap="round" 
+     strokeLinejoin="round" 
+     className={className}
+   >
+      <path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.71.79-1.81.2-2.5l-2.4-2.4c-.69-.59-1.79-.51-2.5.2Z"/><path d="m12.5 7.5 4 4"/><path d="m15 5 4 4"/><path d="M18.5 12c.35 3.5-4.5 7.5-12 11l2.5-2.5c.71-.71.79-1.81.2-2.5l-2.4-2.4c-.69-.59-1.79-.51-2.5.2L1.5 21.5c3.5-7.5 7.5-12 11-12c.35 0 .7.03 1.05.1"/><path d="M21.4 7.5c.29 0 .54-.22.61-.5a12.02 12.02 0 0 0-4.01-11c-.24-.19-.58-.19-.82 0a12.02 12.02 0 0 0-4.01 11c.07.28.32.5.61.5h7.62Z"/>
+   </svg>
+);
