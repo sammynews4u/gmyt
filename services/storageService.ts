@@ -12,7 +12,6 @@ export const storageService = {
 
   async setSyncKey(key: string) {
     localStorage.setItem('gmyt_sync_key', key);
-    // After setting key, immediately try to sync/hydrate
     await this.pullFromCloud();
   },
 
@@ -36,10 +35,6 @@ export const storageService = {
     }
   },
 
-  /**
-   * CRITICAL PROTOCOL: Manually force push all local data to the cloud.
-   * This ensures that the CockroachDB node is hydrated with the initial local state.
-   */
   async forcePushAll() {
     await this.pushToCloud();
     return true;
@@ -54,15 +49,12 @@ export const storageService = {
       const result = await response.json();
       
       if (result.data) {
-        // Cloud has data, merge/import
         const success = await this.importDatabase(JSON.stringify(result.data));
         if (success) {
           localStorage.setItem('gmyt_last_sync', new Date().toISOString());
           return true;
         }
       } else {
-        // Cloud is empty! Auto-hydrate by pushing local state to the cloud
-        console.log("Strategic Sync: Cloud is empty. Hydrating remote cluster...");
         await this.forcePushAll();
         return true;
       }
@@ -122,10 +114,9 @@ export const storageService = {
         password: 'password123',
         position: 'ICT MANAGER',
         department: 'ICT',
-        jobDescription: 'Oversee, manage and ensure full functionality of all ICT systems across the organization. The role cut across systems, infrastructure, platforms, data, contents, and technical support, and requires daily visibility and execution.'
+        jobDescription: 'Oversee, manage and ensure full functionality of all ICT systems across the organization.'
       };
       await dbEngine.putBulk(STORES.USERS, [ceo, ictManager]);
-      // Attempt immediate hydration
       this.pushToCloud();
       return [ceo, ictManager];
     }
@@ -140,40 +131,6 @@ export const storageService = {
     await this.pushToCloud();
   },
 
-  // Password Requests
-  async getPasswordRequests(): Promise<PasswordChangeRequest[]> {
-    return dbEngine.getAll<PasswordChangeRequest>(STORES.PASSWORD_REQUESTS);
-  },
-  async createPasswordRequest(request: PasswordChangeRequest) {
-    const users = await this.getUsers();
-    const user = users.find(u => u.id === request.userId);
-    if (user?.role === 'CEO') {
-      user.password = request.newPassword;
-      await this.saveUser(user);
-      request.status = 'Approved';
-    }
-    await dbEngine.put(STORES.PASSWORD_REQUESTS, request);
-    await this.pushToCloud();
-  },
-  async processPasswordRequest(requestId: string, approved: boolean) {
-    const requests = await this.getPasswordRequests();
-    const req = requests.find(r => r.id === requestId);
-    if (!req) return;
-    if (approved) {
-      const users = await this.getUsers();
-      const user = users.find(u => u.id === req.userId);
-      if (user) {
-        user.password = req.newPassword;
-        await this.saveUser(user);
-        req.status = 'Approved';
-      }
-    } else {
-      req.status = 'Rejected';
-    }
-    await dbEngine.put(STORES.PASSWORD_REQUESTS, req);
-    await this.pushToCloud();
-  },
-
   // Tasks
   async getTasks(): Promise<Task[]> { return dbEngine.getAll<Task>(STORES.TASKS); },
   async saveTask(task: Task) { 
@@ -183,6 +140,22 @@ export const storageService = {
   async deleteTask(id: string) { 
     await dbEngine.delete(STORES.TASKS, id); 
     await this.pushToCloud();
+  },
+
+  // Expenses (Finances)
+  async getExpenses(): Promise<Expense[]> { return dbEngine.getAll<Expense>(STORES.EXPENSES); },
+  async saveExpense(expense: Expense) { 
+    await dbEngine.put(STORES.EXPENSES, expense); 
+    await this.pushToCloud();
+  },
+  async updateExpenseStatus(id: string, status: Expense['status']) {
+    const expenses = await this.getExpenses();
+    const item = expenses.find(e => e.id === id);
+    if (item) {
+      item.status = status;
+      await dbEngine.put(STORES.EXPENSES, item);
+      await this.pushToCloud();
+    }
   },
 
   // Inventory
@@ -208,14 +181,15 @@ export const storageService = {
     }
   },
 
+  // Password Requests
+  async getPasswordRequests(): Promise<PasswordChangeRequest[]> {
+    return dbEngine.getAll<PasswordChangeRequest>(STORES.PASSWORD_REQUESTS);
+  },
+
   // Onboarding
   async getOnboardingDocs(): Promise<OnboardingRecord[]> { return dbEngine.getAll<OnboardingRecord>(STORES.ONBOARDING); },
   async saveOnboardingDoc(doc: OnboardingRecord) { 
     await dbEngine.put(STORES.ONBOARDING, doc); 
-    await this.pushToCloud();
-  },
-  async deleteOnboardingDoc(id: string) { 
-    await dbEngine.delete(STORES.ONBOARDING, id); 
     await this.pushToCloud();
   },
 
@@ -250,9 +224,5 @@ export const storageService = {
   },
 
   // Templates
-  async getTemplates(): Promise<TaskTemplate[]> { return dbEngine.getAll<TaskTemplate>(STORES.TEMPLATES); },
-  async saveTemplate(template: TaskTemplate) { 
-    await dbEngine.put(STORES.TEMPLATES, template); 
-    await this.pushToCloud();
-  }
+  async getTemplates(): Promise<TaskTemplate[]> { return dbEngine.getAll<TaskTemplate>(STORES.TEMPLATES); }
 };

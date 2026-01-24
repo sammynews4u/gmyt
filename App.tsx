@@ -57,29 +57,10 @@ const App: React.FC = () => {
     }
     loadSystemStaff();
     checkDbHealth();
-
-    // Automatic Periodic Cloud Sync (Every 5 minutes)
-    const syncInterval = setInterval(() => {
-      autoBackgroundSync();
-    }, 5 * 60 * 1000);
-
-    return () => clearInterval(syncInterval);
   }, []);
-
-  const autoBackgroundSync = async () => {
-    const syncKey = await storageService.getSyncKey();
-    if (syncKey) {
-      setIsSyncing(true);
-      await storageService.pullFromCloud();
-      const status = await storageService.getDbStatus();
-      setDbStatus(status);
-      setIsSyncing(false);
-    }
-  };
 
   const checkDbHealth = async () => {
     setIsSyncing(true);
-    // On mount, pull from cloud to ensure latest state is local
     await storageService.pullFromCloud();
     const status = await storageService.getDbStatus();
     setDbStatus(status);
@@ -92,15 +73,16 @@ const App: React.FC = () => {
   };
 
   useEffect(() => {
-    if (activeTab === 'tasks' || activeTab === 'staff-management' || activeTab === 'onboarding' || activeTab === 'hiring') {
-      loadSystemStaff();
+    if (currentUser) {
+       loadSystemStaff();
+       checkDbHealth();
     }
-    checkDbHealth();
   }, [activeTab]);
 
   const handleLogin = (user: UserAccount) => {
     setCurrentUser(user);
     localStorage.setItem('gmyt_session', JSON.stringify(user));
+    setShowLanding(false);
   };
 
   const handleLogout = () => {
@@ -121,7 +103,7 @@ const App: React.FC = () => {
     { id: 'hiring', label: 'Recruitment', icon: <UserPlus size={20} />, roles: ['CEO', 'Project Manager'] },
     { id: 'tasks', label: 'SMART Task Sheet', icon: <ClipboardList size={20} />, roles: ['CEO', 'Project Manager', 'Staff'] },
     { id: 'onboarding', label: 'Staff Onboarding Docs', icon: <FolderLock size={20} />, roles: ['CEO', 'Project Manager'] },
-    { id: 'inventory', label: 'Store Inventory', icon: <Package size={20} />, roles: ['CEO', 'Project Manager', 'Accountant'] },
+    { id: 'inventory', label: 'Store Inventory', icon: <Package size={20} />, roles: ['CEO', 'Accountant'] },
     { id: 'expenses', label: 'Financial Sheet', icon: <Banknote size={20} />, roles: ['CEO', 'Accountant'] },
     { id: 'payroll', label: 'Payroll & Paychecks', icon: <Banknote size={20} />, roles: ['CEO', 'Accountant'] },
     { id: 'performance', label: 'KPI Performance', icon: <Target size={20} />, roles: ['CEO', 'Project Manager', 'Staff'] },
@@ -142,9 +124,7 @@ const App: React.FC = () => {
   const filteredMenu = menuItems.filter(item => item.roles.includes(currentRole));
 
   const renderContent = () => {
-    // Inside this block, we know currentUser is not null because of the early return above.
     const user = currentUser!;
-    
     switch (activeTab) {
       case 'dashboard': return <Dashboard role={currentRole} />;
       case 'attendance': return <AttendanceRegister user={user} />;
@@ -153,7 +133,7 @@ const App: React.FC = () => {
       case 'tasks': return <TaskBoard user={user} staff={systemStaff} />;
       case 'onboarding': return <OnboardingPortal role={currentRole} staff={systemStaff} />;
       case 'inventory': return <InventorySystem user={user} />;
-      case 'expenses': return <ExpenseSheet />;
+      case 'expenses': return <ExpenseSheet user={user} />;
       case 'payroll': return <PayrollSystem role={currentRole} />;
       case 'performance': return <PerformanceMetrics />;
       case 'communication': return <CommunicationCenter role={currentRole} />;
@@ -164,140 +144,39 @@ const App: React.FC = () => {
   };
 
   return (
-    <div className="flex h-screen overflow-hidden animate-in fade-in duration-700 bg-zinc-950">
-      {isMeetingActive && (
-        <VideoConference 
-          title={meetingContext.title} 
-          type={meetingContext.type} 
-          onClose={() => setIsMeetingActive(false)} 
-        />
-      )}
-
-      {/* Sidebar */}
-      <aside className={`${isSidebarOpen ? 'w-64' : 'w-20'} bg-zinc-900 border-r border-zinc-800 transition-all duration-300 flex flex-col z-50 shadow-2xl shadow-black`}>
+    <div className="flex h-screen overflow-hidden bg-zinc-950">
+      {isMeetingActive && <VideoConference title={meetingContext.title} type={meetingContext.type} onClose={() => setIsMeetingActive(false)} />}
+      <aside className={`${isSidebarOpen ? 'w-64' : 'w-20'} bg-zinc-900 border-r border-zinc-800 transition-all duration-300 flex flex-col z-50`}>
         <div className="p-6 flex items-center gap-3">
-          <button 
-            onClick={() => setShowLanding(true)}
-            className="w-8 h-8 gold-gradient rounded-lg flex items-center justify-center shrink-0 hover:scale-110 transition-transform"
-          >
-            <span className="text-black font-bold text-xs">G</span>
-          </button>
+          <div className="w-8 h-8 gold-gradient rounded-lg flex items-center justify-center shrink-0"><span className="text-black font-bold text-xs">G</span></div>
           {isSidebarOpen && <h1 className="font-bold text-lg gold-text tracking-tight uppercase">GMYT Group</h1>}
         </div>
-
         <nav className="flex-1 px-4 py-2 space-y-1 overflow-y-auto no-scrollbar">
           {filteredMenu.map((item) => (
-            <button
-              key={item.id}
-              onClick={() => setActiveTab(item.id)}
-              className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all ${
-                activeTab === item.id 
-                  ? 'bg-amber-500/10 text-amber-500 font-medium' 
-                  : 'text-zinc-400 hover:text-white hover:bg-zinc-800'
-              }`}
-            >
-              {item.icon}
-              {isSidebarOpen && <span className="text-sm">{item.label}</span>}
-              {activeTab === item.id && isSidebarOpen && <ChevronRight size={16} className="ml-auto" />}
+            <button key={item.id} onClick={() => setActiveTab(item.id)} className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all ${activeTab === item.id ? 'bg-amber-500/10 text-amber-500 font-medium' : 'text-zinc-400 hover:text-white hover:bg-zinc-800'}`}>
+              {item.icon}{isSidebarOpen && <span className="text-sm">{item.label}</span>}
             </button>
           ))}
         </nav>
-
-        {isSidebarOpen && (
-          <div className="px-4 py-4 border-t border-zinc-800 space-y-4">
-             {/* Real-time Clock */}
-             <div className="bg-zinc-950/80 border border-zinc-800/50 p-4 rounded-2xl shadow-inner">
-                <div className="flex items-center justify-between mb-1">
-                  <span className="text-[10px] font-black text-zinc-600 uppercase tracking-widest">Global Time</span>
-                  <Watch size={10} className="text-amber-500" />
-                </div>
-                <div className="flex items-baseline gap-1">
-                  <span className="text-xl font-black text-white tabular-nums tracking-tighter">
-                    {time.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                  </span>
-                  <span className="text-[10px] font-black text-amber-500 tabular-nums animate-pulse w-4 text-center">
-                    {time.toLocaleTimeString([], { second: '2-digit' })}
-                  </span>
-                </div>
-                <div className="text-[9px] font-bold text-zinc-500 uppercase mt-1">
-                   {time.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
-                </div>
-             </div>
-
-             <div className="bg-zinc-950/50 border border-zinc-800 rounded-2xl p-4">
-                <div className="flex items-center justify-between mb-2">
-                   <div className="flex items-center gap-2">
-                      <div className={`w-1.5 h-1.5 rounded-full ${isSyncing ? 'bg-amber-500 animate-ping' : 'bg-emerald-500'} transition-colors`}></div>
-                      <span className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">
-                        {isSyncing ? 'Syncing...' : 'DB Online'}
-                      </span>
-                   </div>
-                   <Cloud size={12} className="text-zinc-700" />
-                </div>
-                <div className="text-[9px] font-bold text-zinc-600 truncate uppercase tracking-tighter">ENGINE: {dbStatus.engine}</div>
-             </div>
-          </div>
-        )}
-
         <div className="p-4 border-t border-zinc-800 space-y-2">
-          {isSidebarOpen && (
-            <button 
-              onClick={handleLogout}
-              className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-zinc-500 hover:text-rose-500 hover:bg-rose-500/10 transition-all"
-            >
-              <LogOut size={20} />
-              <span className="text-xs font-bold uppercase tracking-widest">Sign Out</span>
-            </button>
-          )}
-          <button 
-            onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-            className="w-full flex items-center justify-center p-2 rounded-lg text-zinc-400 hover:text-white hover:bg-zinc-800"
-          >
-            {isSidebarOpen ? <X size={20} /> : <Menu size={20} />}
-          </button>
+          {isSidebarOpen && <button onClick={handleLogout} className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-zinc-500 hover:text-rose-500 hover:bg-rose-500/10 transition-all"><LogOut size={20} /><span className="text-xs font-bold uppercase">Sign Out</span></button>}
+          <button onClick={() => setIsSidebarOpen(!isSidebarOpen)} className="w-full flex items-center justify-center p-2 rounded-lg text-zinc-400 hover:text-white hover:bg-zinc-800">{isSidebarOpen ? <X size={20} /> : <Menu size={20} />}</button>
         </div>
       </aside>
-
-      {/* Main Content */}
       <main className="flex-1 flex flex-col overflow-hidden">
         <header className="h-16 border-b border-zinc-800 flex items-center justify-between px-8 bg-zinc-900/50 backdrop-blur-md">
           <div className="flex items-center gap-4">
-            <div className="hidden sm:block">
-              <h2 className="text-zinc-400 text-[10px] font-bold uppercase tracking-[0.2em]">Node Security</h2>
-              <div className="flex items-center gap-2">
-                <ShieldCheck size={12} className="text-emerald-500" />
-                <h3 className="text-white font-black text-[10px] uppercase tracking-wider">IndexedDB Encrypted Pool</h3>
-              </div>
-            </div>
-            <div className="h-8 w-px bg-zinc-800 hidden sm:block"></div>
-            <div>
-              <h3 className="text-white font-semibold flex items-center gap-2">
-                {menuItems.find(m => m.id === activeTab)?.label}
-              </h3>
-            </div>
+            <h3 className="text-white font-semibold flex items-center gap-2">{menuItems.find(m => m.id === activeTab)?.label}</h3>
           </div>
           <div className="flex items-center gap-6">
-            <div className={`flex items-center gap-2 px-3 py-1.5 rounded-full border ${isSyncing ? 'border-amber-500/20 bg-amber-500/5 text-amber-500' : 'border-emerald-500/20 bg-emerald-500/5 text-emerald-500'} transition-all duration-500`}>
-              {isSyncing ? <RefreshCw size={12} className="animate-spin" /> : <ShieldCheck size={12} />}
-              <span className="text-[9px] font-black uppercase tracking-[0.15em]">{isSyncing ? 'Commit in Progress' : 'Data Integrity Verified'}</span>
+            <div className="text-right hidden sm:block">
+              <p className="text-sm font-medium text-white">{currentUser.name}</p>
+              <p className="text-[10px] text-zinc-500 font-bold uppercase tracking-widest">{currentUser.role}</p>
             </div>
-            <div className="flex items-center gap-4">
-              <div className="text-right hidden sm:block">
-                <p className="text-sm font-medium text-white">{currentUser.name}</p>
-                <p className="text-[10px] text-zinc-500 font-bold uppercase tracking-widest">@{currentUser.username}</p>
-              </div>
-              <div className="w-10 h-10 rounded-full gold-gradient p-[1px] shadow-lg shadow-amber-500/10">
-                <div className="w-full h-full rounded-full bg-zinc-900 flex items-center justify-center overflow-hidden">
-                  <img src={`https://picsum.photos/40/40?grayscale&v=${currentUser.id}`} alt="Avatar" className="w-full h-full object-cover" />
-                </div>
-              </div>
-            </div>
+            <div className="w-10 h-10 rounded-full gold-gradient p-[1px]"><div className="w-full h-full rounded-full bg-zinc-900 flex items-center justify-center"><img src={`https://picsum.photos/40/40?grayscale&v=${currentUser.id}`} alt="Avatar" className="w-full h-full rounded-full object-cover" /></div></div>
           </div>
         </header>
-
-        <section className="flex-1 overflow-y-auto no-scrollbar p-8">
-          {renderContent()}
-        </section>
+        <section className="flex-1 overflow-y-auto no-scrollbar p-8">{renderContent()}</section>
       </main>
     </div>
   );

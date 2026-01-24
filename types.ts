@@ -64,6 +64,7 @@ export interface Task {
     keyResult: string;
     reflection: string;
     challenges: string;
+    report?: string; // Completion report
   };
   comments: Array<{ user: string, text: string, date: string }>;
   lineRemarks: string; // Sup/Line Remarks
