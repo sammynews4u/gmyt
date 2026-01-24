@@ -21,6 +21,19 @@ export interface UserAccount {
   status?: 'Active' | 'Suspended' | 'Terminated';
 }
 
+export interface ChatMessage {
+  id: string;
+  senderId: string;
+  senderName: string;
+  senderRole: UserRole;
+  receiverId?: string; // If undefined, it's a channel/broadcast message
+  channelId?: string; // 'global', 'management', 'ict', 'accounts'
+  text: string;
+  timestamp: string;
+  isRead: boolean;
+  mentions?: string[]; // User IDs or Role tags
+}
+
 export interface PasswordChangeRequest {
   id: string;
   userId: string;

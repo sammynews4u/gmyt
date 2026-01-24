@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { 
   Plus, Search, CheckCircle, Trash2, X, Play, 
@@ -42,7 +41,9 @@ export default function TaskBoard({ user, staff }: TaskBoardProps) {
 
   const isCEO = user.role === 'CEO';
   const isPM = user.role === 'Project Manager';
-  const isManagement = isCEO || isPM;
+  const isICT = user.department === 'ICT';
+  // IT Department now included in Management authorization for task assignment and approval
+  const isManagement = isCEO || isPM || isICT;
 
   const initialTaskState: Partial<Task> = {
     role: '',
@@ -142,7 +143,7 @@ export default function TaskBoard({ user, staff }: TaskBoardProps) {
       ...reportingTask,
       skrc: { 
         ...reportingTask.skrc, 
-        status: 'Awaiting Approval', // Changed from 'Completed' for mandatory verification
+        status: 'Awaiting Approval',
         report: reportText 
       }
     };
@@ -171,7 +172,7 @@ export default function TaskBoard({ user, staff }: TaskBoardProps) {
     setIsUpdatingTask(task.id);
     const updatedTask: Task = {
       ...task,
-      skrc: { ...task.skrc, status: 'Ongoing' } // Send back to Ongoing for revision
+      skrc: { ...task.skrc, status: 'Ongoing' }
     };
     await storageService.saveTask(updatedTask);
     setTasks(tasks.map(t => t.id === task.id ? updatedTask : t));
@@ -248,6 +249,7 @@ export default function TaskBoard({ user, staff }: TaskBoardProps) {
               <h2 className="text-2xl font-black gold-text uppercase tracking-tight">Strategic Task Board</h2>
               <p className="text-xs text-zinc-500 font-bold uppercase tracking-widest">
                  GMYT Framework: PRRR + SMART + SKRC
+                 {isICT && <span className="ml-3 text-blue-500 flex items-center gap-1"><ShieldCheck size={14} /> ICT Administrative Access</span>}
               </p>
            </div>
         </div>
@@ -353,7 +355,6 @@ export default function TaskBoard({ user, staff }: TaskBoardProps) {
                                             </div>
                                          </div>
                                          <div className="flex gap-4">
-                                            {/* Final Approval Phase for Management */}
                                             {isManagement && isAwaiting && (
                                               <>
                                                 <button 
@@ -371,7 +372,6 @@ export default function TaskBoard({ user, staff }: TaskBoardProps) {
                                               </>
                                             )}
 
-                                            {/* Staff Action Phase */}
                                             {isAssignedToMe && !task.skrc.isStarted && (
                                               <button onClick={(e) => { e.stopPropagation(); handleStartTask(task); }} className="px-8 py-3 bg-blue-600 text-white font-black rounded-xl text-[10px] uppercase tracking-widest">Start Task</button>
                                             )}
@@ -384,7 +384,6 @@ export default function TaskBoard({ user, staff }: TaskBoardProps) {
                                               </div>
                                             )}
 
-                                            {/* Decommissioning Control */}
                                             {isManagement && (
                                               <button onClick={(e) => { e.stopPropagation(); handleDeleteTrigger(task); }} className="p-3 bg-rose-500/10 text-rose-500 rounded-xl hover:bg-rose-500 hover:text-white transition-all"><Trash2 size={18} /></button>
                                             )}
@@ -448,13 +447,13 @@ export default function TaskBoard({ user, staff }: TaskBoardProps) {
         )}
       </div>
 
-      {/* Decommissioning Modal (Delete Confirmation) */}
       {isDeleteModalOpen && taskToDelete && (
         <div className="fixed inset-0 z-[250] flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-black/95 backdrop-blur-xl" onClick={() => setIsDeleteModalOpen(false)}></div>
           <div className="relative w-full max-w-xl bg-zinc-950 border border-rose-500/30 rounded-[3rem] p-10 shadow-2xl animate-in zoom-in duration-300">
              <div className="flex items-center gap-6 mb-8">
                <div className="p-5 bg-rose-500/10 rounded-[2rem] border border-rose-500/20 text-rose-500">
+                  {/* Fixed typo in prop from size(40} to size={40} */}
                   <ShieldAlert size={40} />
                </div>
                <div>
@@ -462,7 +461,6 @@ export default function TaskBoard({ user, staff }: TaskBoardProps) {
                   <p className="text-xs text-rose-500 font-bold uppercase tracking-widest mt-1">Authorized Access Only</p>
                </div>
              </div>
-
              <div className="space-y-6">
                 <div className="p-6 bg-zinc-900/50 border border-zinc-800 rounded-2xl space-y-4">
                    <div>
@@ -478,7 +476,6 @@ export default function TaskBoard({ user, staff }: TaskBoardProps) {
                       <p className="text-sm font-black text-amber-500 mt-1 uppercase">{taskToDelete.responsibleParty}</p>
                    </div>
                 </div>
-
                 <div className="space-y-3">
                    <label className="text-[10px] font-black text-zinc-400 uppercase tracking-[0.2em] ml-1">Type "DELETE" to confirm decommissioning</label>
                    <input 
@@ -490,7 +487,6 @@ export default function TaskBoard({ user, staff }: TaskBoardProps) {
                      onChange={(e) => setDeleteConfirmationText(e.target.value.toUpperCase())}
                    />
                 </div>
-
                 <div className="flex gap-4 pt-4">
                    <button 
                      onClick={executeDeleteTask}
@@ -511,7 +507,6 @@ export default function TaskBoard({ user, staff }: TaskBoardProps) {
         </div>
       )}
 
-      {/* Completion Report Modal */}
       {isReportModalOpen && reportingTask && (
         <div className="fixed inset-0 z-[200] flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-black/95 backdrop-blur-md" onClick={() => setIsReportModalOpen(false)}></div>
@@ -569,8 +564,6 @@ export default function TaskBoard({ user, staff }: TaskBoardProps) {
                    <textarea rows={2} className="w-full bg-zinc-950 border border-zinc-800 p-4 rounded-xl text-sm text-white shadow-inner" value={newTask.tasksForToday} onChange={e => setNewTask({...newTask, tasksForToday: e.target.value})} placeholder="1. Task one... 2. Task two..." />
                 </div>
              </div>
-             
-             {/* Retaining Analysis Inputs */}
              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-8">
                 <div className="space-y-4 bg-zinc-900 p-6 rounded-2xl border border-zinc-800">
                    <h4 className="text-[10px] font-black text-amber-500 uppercase">PRRR Identification</h4>
@@ -585,7 +578,6 @@ export default function TaskBoard({ user, staff }: TaskBoardProps) {
                    <textarea className="w-full bg-zinc-950 border border-zinc-800 p-3 rounded-xl text-xs text-white" placeholder="Expected outcome..." value={newTask.skrc?.keyResult} onChange={e => setNewTask({...newTask, skrc: {...newTask.skrc!, keyResult: e.target.value}})} />
                 </div>
              </div>
-
              <div className="mt-8 flex gap-4">
                 <button onClick={handleAiGenerate} disabled={isAiGenerating} className="px-8 py-3 bg-amber-500/10 border border-amber-500/30 text-amber-500 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-amber-500 hover:text-black transition-all">
                    {isAiGenerating ? <Loader2 className="animate-spin" size={16}/> : <><Wand2 size={16} /> AI Strategy Engine</>}

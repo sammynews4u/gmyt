@@ -1,7 +1,7 @@
 
 const DB_NAME = 'GMYT_Enterprise_DB';
-// Bumped DB_VERSION to 5 for password requests store
-const DB_VERSION = 5;
+// Bumped DB_VERSION to 6 for chats store
+const DB_VERSION = 6;
 
 export const STORES = {
   TASKS: 'tasks',
@@ -15,7 +15,8 @@ export const STORES = {
   TEMPLATES: 'templates',
   METADATA: 'metadata',
   MEETINGS: 'meetings',
-  PASSWORD_REQUESTS: 'password_requests'
+  PASSWORD_REQUESTS: 'password_requests',
+  CHATS: 'chats'
 };
 
 class IndexedDBEngine {

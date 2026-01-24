@@ -5,7 +5,7 @@ import {
   Calendar, Menu, X, ChevronRight, UserCircle, Briefcase, 
   Settings, MessageSquareWarning, Users, Clock, LogOut,
   Contact, FolderLock, Database, Cloud, Watch, ShieldCheck, RefreshCw,
-  UserPlus
+  UserPlus, MessageSquare
 } from 'lucide-react';
 import Dashboard from './components/Dashboard';
 import TaskBoard from './components/TaskBoard';
@@ -23,6 +23,7 @@ import AttendanceRegister from './components/AttendanceRegister';
 import Login from './components/Login';
 import StaffManagement from './components/StaffManagement';
 import HiringPortal from './components/HiringPortal';
+import StrategicChat from './components/StrategicChat';
 import { UserRole, UserAccount } from './types';
 import { storageService } from './services/storageService';
 
@@ -99,6 +100,7 @@ const App: React.FC = () => {
   const menuItems = [
     { id: 'dashboard', label: 'Dashboard', icon: <LayoutDashboard size={20} />, roles: ['CEO', 'Project Manager', 'Staff', 'Accountant'] },
     { id: 'attendance', label: 'Attendance', icon: <Clock size={20} />, roles: ['CEO', 'Project Manager', 'Staff', 'Accountant'] },
+    { id: 'chat', label: 'Strategic Comms', icon: <MessageSquare size={20} />, roles: ['CEO', 'Project Manager', 'Staff', 'Accountant'] },
     { id: 'staff-management', label: 'Staff Management', icon: <Contact size={20} />, roles: ['CEO'] },
     { id: 'hiring', label: 'Recruitment', icon: <UserPlus size={20} />, roles: ['CEO', 'Project Manager'] },
     { id: 'tasks', label: 'SMART Task Sheet', icon: <ClipboardList size={20} />, roles: ['CEO', 'Project Manager', 'Staff'] },
@@ -128,6 +130,7 @@ const App: React.FC = () => {
     switch (activeTab) {
       case 'dashboard': return <Dashboard role={currentRole} />;
       case 'attendance': return <AttendanceRegister user={user} />;
+      case 'chat': return <StrategicChat user={user} staff={systemStaff} />;
       case 'staff-management': return <StaffManagement role={currentRole} />;
       case 'hiring': return <HiringPortal role={currentRole} onStartInterview={(name) => startMeeting(`Interview: ${name}`, 'Interview')} />;
       case 'tasks': return <TaskBoard user={user} staff={systemStaff} />;

@@ -1,5 +1,5 @@
 
-import { Task, InventoryItem, Expense, Paycheck, OnboardingRecord, Complaint, KPI, MeetingMinutes, UserAccount, AttendanceRecord, TaskTemplate, PasswordChangeRequest } from '../types';
+import { Task, InventoryItem, Expense, Paycheck, OnboardingRecord, Complaint, KPI, MeetingMinutes, UserAccount, AttendanceRecord, TaskTemplate, PasswordChangeRequest, ChatMessage } from '../types';
 import { dbEngine, STORES } from './db';
 
 const networkDelay = (ms: number = 300) => new Promise(resolve => setTimeout(resolve, ms));
@@ -220,6 +220,15 @@ export const storageService = {
   async getMeetings(): Promise<MeetingMinutes[]> { return dbEngine.getAll<MeetingMinutes>(STORES.MEETINGS); },
   async saveMeeting(meeting: MeetingMinutes) { 
     await dbEngine.put(STORES.MEETINGS, meeting); 
+    await this.pushToCloud();
+  },
+
+  // Chats
+  async getMessages(): Promise<ChatMessage[]> {
+    return dbEngine.getAll<ChatMessage>(STORES.CHATS);
+  },
+  async saveMessage(message: ChatMessage) {
+    await dbEngine.put(STORES.CHATS, message);
     await this.pushToCloud();
   },
 
