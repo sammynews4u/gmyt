@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { 
   FolderLock, Search, UserPlus, FileText, CheckCircle2, 
@@ -96,6 +97,7 @@ const OnboardingPortal: React.FC<OnboardingProps> = ({ role, staff }) => {
       const task: Task = {
         id: `auto-${Date.now()}-${Math.random()}`,
         sn: 0, // Storage service will need to handle SN properly in real app
+        dateLogged: new Date().toLocaleDateString(),
         role: base.role!,
         tasksForToday: base.smart?.specific || "Perform induction tasks.",
         responsibleParty: record.staffName,
@@ -316,3 +318,4 @@ const OnboardingPortal: React.FC<OnboardingProps> = ({ role, staff }) => {
 };
 
 export default OnboardingPortal;
+    

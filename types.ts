@@ -58,31 +58,32 @@ export interface AttendanceRecord {
 export interface Task {
   id: string;
   sn: number;
-  role: string; // Job Description / Core Objective
-  tasksForToday: string; // Immediate execution items
+  dateLogged: string; // New field for "SN / DAYS"
+  role: string; // Job Description / Role
+  tasksForToday: string; // Kept for backward compatibility, mapped to Specific if needed
   problem: {
-    description: string; // Problem Identification
-    rootCauseAndConsequences: string; // Root Cause & Consequences
+    description: string; // Problem Identification / Description
+    rootCauseAndConsequences: string; // Root Cause & / or Consequence
     risk: string; // Risk
   };
-  responsibleParty: string;
+  responsibleParty: string; // Responsible Party
   smart: {
-    specific: string;
-    measurable: string;
-    attainable: string;
-    relevance: string;
-    timeBound: string;
+    specific: string; // Specific
+    measurable: string; // Measurable
+    attainable: string; // Attainable
+    relevance: string; // Relevance
+    timeBound: string; // Time bound
   };
   skrc: {
-    status: TaskStatus;
+    status: TaskStatus; // Status
     isStarted: boolean;
-    keyResult: string;
-    reflection: string;
-    challenges: string;
-    report?: string; // Completion report
+    keyResult: string; // Key Result
+    reflection: string; // Reflections
+    challenges: string; // Challenges
+    report?: string; 
   };
   comments: Array<{ user: string, text: string, date: string }>;
-  lineRemarks: string; // Sup/Line Remarks
+  lineRemarks: string; // SUP / Line Remarks
   deadline: string;
   priority: number;
   addedBy: UserRole;
