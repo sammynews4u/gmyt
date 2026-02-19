@@ -9,7 +9,7 @@ import {
   Zap, Cpu, ListChecks, FileInput, Send, Printer, MessageSquare,
   FileText, AlertCircle, Eye, ThumbsUp, RotateCcw,
   Target as TargetIcon, ArrowRight, Info, BarChart, Edit,
-  Calendar, Check
+  Calendar, Check, User
 } from 'lucide-react';
 import { Task, UserAccount, TaskStatus } from '../types';
 import { storageService } from '../services/storageService';
@@ -29,6 +29,12 @@ export default function TaskBoard({ user, staff }: TaskBoardProps) {
   const [editingTask, setEditingTask] = useState<Task | null>(null);
   const [expandedTaskId, setExpandedTaskId] = useState<string | null>(null);
 
+  // Reporting State
+  const [reportingTask, setReportingTask] = useState<Task | null>(null);
+  const [reportText, setReportText] = useState('');
+  const [reportStatus, setReportStatus] = useState<TaskStatus>('Completed');
+  const [isReportModalOpen, setIsReportModalOpen] = useState(false);
+
   const isCEO = user.role === 'CEO';
   const isPM = user.role === 'Project Manager';
   const isManagement = isCEO || isPM;
@@ -36,7 +42,7 @@ export default function TaskBoard({ user, staff }: TaskBoardProps) {
   const initialTaskState: Partial<Task> = {
     role: '',
     dateLogged: new Date().toLocaleDateString(),
-    tasksForToday: '', // Mapped to Specific primarily
+    tasksForToday: '', 
     responsibleParty: '',
     problem: { description: '', rootCauseAndConsequences: '', risk: '' },
     smart: { specific: '', measurable: '', attainable: '', relevance: '', timeBound: 'Today EOD' },
@@ -123,10 +129,56 @@ export default function TaskBoard({ user, staff }: TaskBoardProps) {
     }
   };
 
-  const handleStatusUpdate = async (task: Task, newStatus: TaskStatus) => {
-    const updated = { ...task, skrc: { ...task.skrc, status: newStatus } };
-    await storageService.saveTask(updated);
-    setTasks(tasks.map(t => t.id === task.id ? updated : t));
+  // --- REPORTING WORKFLOW ---
+
+  const handleOpenReport = (task: Task) => {
+    setReportingTask(task);
+    setReportText(task.skrc.report || '');
+    setReportStatus(task.skrc.status === 'Pending' || task.skrc.status === 'Ongoing' ? 'Completed' : task.skrc.status);
+    setIsReportModalOpen(true);
+  };
+
+  const handleSubmitReport = async () => {
+    if (!reportingTask) return;
+    
+    let nextStatus = reportStatus;
+    // If reporting completed, it goes to approval queue
+    if (reportStatus === 'Completed') {
+      nextStatus = 'Awaiting Approval';
+    }
+
+    const updatedTask: Task = {
+      ...reportingTask,
+      skrc: { 
+        ...reportingTask.skrc, 
+        status: nextStatus,
+        report: reportText,
+        // If they report it as started/ongoing/completed, isStarted is true
+        isStarted: true 
+      }
+    };
+
+    await storageService.saveTask(updatedTask);
+    await loadTasks();
+    setIsReportModalOpen(false);
+    setReportingTask(null);
+  };
+
+  // --- MANAGEMENT VERIFICATION ---
+
+  const handleVerifyTask = async (task: Task, isApproved: boolean) => {
+    const updatedTask: Task = {
+      ...task,
+      skrc: {
+        ...task.skrc,
+        status: isApproved ? 'Completed' : 'Ongoing', // If rejected, goes back to Ongoing
+      },
+      lineRemarks: isApproved 
+        ? `${task.lineRemarks ? task.lineRemarks + '\n' : ''}[VERIFIED by ${user.name}]` 
+        : `${task.lineRemarks ? task.lineRemarks + '\n' : ''}[REJECTED by ${user.name}: Re-work required]`
+    };
+    await storageService.saveTask(updatedTask);
+    await loadTasks();
   };
 
   const filteredTasks = tasks.filter(t => 
@@ -230,10 +282,14 @@ export default function TaskBoard({ user, staff }: TaskBoardProps) {
                 </tr>
               </thead>
               <tbody className="divide-y divide-zinc-800">
-                {filteredTasks.map((task) => (
+                {filteredTasks.map((task) => {
+                  const isAssignedToMe = task.responsibleParty === user.name;
+                  const isAwaitingApproval = task.skrc.status === 'Awaiting Approval';
+
+                  return (
                   <React.Fragment key={task.id}>
                     <tr 
-                      className={`hover:bg-zinc-800/40 transition-colors group text-xs text-zinc-300 cursor-pointer ${expandedTaskId === task.id ? 'bg-zinc-800/30' : ''}`}
+                      className={`hover:bg-zinc-800/40 transition-colors group text-xs text-zinc-300 cursor-pointer ${expandedTaskId === task.id ? 'bg-zinc-800/30' : ''} ${isAwaitingApproval ? 'bg-amber-500/5' : ''}`}
                       onClick={() => setExpandedTaskId(expandedTaskId === task.id ? null : task.id)}
                     >
                       <td className="p-4 sticky left-0 bg-zinc-900 group-hover:bg-zinc-800 z-10 border-r border-zinc-800 text-center">
@@ -288,16 +344,34 @@ export default function TaskBoard({ user, staff }: TaskBoardProps) {
                                        </div>
                                     </div>
                                  </div>
-                                 <div className="flex gap-3">
-                                    {['Pending', 'Ongoing', 'Completed'].map((s) => (
+                                 <div className="flex gap-4">
+                                    {/* STAFF ACTIONS: Submit Report */}
+                                    {isAssignedToMe && task.skrc.status !== 'Completed' && (
                                        <button 
-                                          key={s}
-                                          onClick={() => handleStatusUpdate(task, s as TaskStatus)}
-                                          className={`px-6 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest border transition-all ${task.skrc.status === s ? 'bg-white text-black border-white' : 'bg-zinc-950 text-zinc-500 border-zinc-800 hover:text-white'}`}
+                                          onClick={(e) => { e.stopPropagation(); handleOpenReport(task); }}
+                                          className="px-8 py-4 gold-gradient text-black font-black rounded-2xl uppercase tracking-widest text-xs hover:scale-105 transition-transform flex items-center gap-3"
                                        >
-                                          {s}
+                                          <FileText size={16} /> Submit Daily Report
                                        </button>
-                                    ))}
+                                    )}
+
+                                    {/* MANAGER ACTIONS: Verify/Reject */}
+                                    {isManagement && isAwaitingApproval && (
+                                      <div className="flex gap-3">
+                                         <button 
+                                            onClick={(e) => { e.stopPropagation(); handleVerifyTask(task, true); }}
+                                            className="px-6 py-4 bg-emerald-600 text-white font-black rounded-2xl uppercase tracking-widest text-xs hover:bg-emerald-500 transition-all flex items-center gap-2"
+                                         >
+                                            <ThumbsUp size={16} /> Verify Done
+                                         </button>
+                                         <button 
+                                            onClick={(e) => { e.stopPropagation(); handleVerifyTask(task, false); }}
+                                            className="px-6 py-4 bg-zinc-800 text-rose-500 border border-rose-500/30 font-black rounded-2xl uppercase tracking-widest text-xs hover:bg-rose-500 hover:text-white transition-all flex items-center gap-2"
+                                         >
+                                            <RotateCcw size={16} /> Reject
+                                         </button>
+                                      </div>
+                                    )}
                                  </div>
                               </div>
 
@@ -338,7 +412,8 @@ export default function TaskBoard({ user, staff }: TaskBoardProps) {
                       </tr>
                     )}
                   </React.Fragment>
-                ))}
+                  );
+                })}
               </tbody>
             </table>
           </div>
@@ -476,6 +551,62 @@ export default function TaskBoard({ user, staff }: TaskBoardProps) {
           </div>
         </div>
       )}
+
+      {/* REPORT MODAL */}
+      {isReportModalOpen && reportingTask && (
+        <div className="fixed inset-0 z-[200] flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/98 backdrop-blur-md" onClick={() => setIsReportModalOpen(false)}></div>
+          <div className="relative w-full max-w-2xl bg-zinc-900 border border-zinc-800 rounded-[3rem] p-8 md:p-10 shadow-2xl animate-in zoom-in duration-300">
+             <div className="flex justify-between items-center mb-10">
+               <div className="flex items-center gap-6">
+                 <div className="p-4 bg-emerald-500/10 rounded-2xl border border-emerald-500/20 text-emerald-500">
+                    <CheckCircle size={32} />
+                 </div>
+                 <div>
+                   <h2 className="text-2xl font-black text-white uppercase tracking-tight">Daily Execution Report</h2>
+                   <p className="text-xs text-zinc-500 mt-1 uppercase tracking-[0.2em] font-bold">End of Day (EOD) Submission</p>
+                 </div>
+               </div>
+               <button onClick={() => setIsReportModalOpen(false)} className="p-4 bg-zinc-900 rounded-3xl text-zinc-500 hover:text-white"><X size={24}/></button>
+             </div>
+             <div className="space-y-8">
+                <div className="space-y-3">
+                   <label className="text-[11px] font-black text-zinc-600 uppercase tracking-widest ml-1">Current Execution Status</label>
+                   <div className="grid grid-cols-3 gap-4">
+                      {['Completed', 'Ongoing', 'Delayed'].map((status) => (
+                        <button
+                          key={status}
+                          onClick={() => setReportStatus(status as TaskStatus)}
+                          className={`py-4 rounded-xl text-xs font-black uppercase tracking-widest transition-all border ${reportStatus === status ? 
+                            (status === 'Completed' ? 'bg-emerald-500 text-black border-emerald-500' : 
+                             status === 'Ongoing' ? 'bg-blue-500 text-white border-blue-500' : 
+                             'bg-rose-500 text-white border-rose-500') 
+                            : 'bg-zinc-950 text-zinc-500 border-zinc-800 hover:border-zinc-600'}`}
+                        >
+                          {status}
+                        </button>
+                      ))}
+                   </div>
+                </div>
+
+                <div className="space-y-3">
+                   <label className="text-[11px] font-black text-zinc-600 uppercase tracking-widest ml-1">Report Findings (Detailed Paragraph)</label>
+                   <textarea 
+                     rows={6}
+                     placeholder="Provide a comprehensive breakdown of your results, achievement of SMART goals, and critical challenges faced during this execution phase..." 
+                     className="w-full bg-zinc-950 border border-zinc-800 p-6 md:p-8 rounded-[2rem] text-sm focus:border-emerald-500 outline-none text-zinc-200 leading-relaxed shadow-inner" 
+                     value={reportText} 
+                     onChange={e => setReportText(e.target.value)} 
+                   />
+                </div>
+                <button onClick={handleSubmitReport} className="w-full py-6 bg-emerald-600 text-white font-black rounded-2xl uppercase tracking-widest text-[11px] flex items-center justify-center gap-4 hover:shadow-2xl hover:shadow-emerald-600/30 transition-all">
+                   <Send size={20} /> Transmit Report
+                </button>
+             </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
+    

@@ -5,7 +5,7 @@ import {
   Calendar, Menu, X, ChevronRight, UserCircle, Briefcase, 
   Settings, MessageSquareWarning, Users, Clock, LogOut,
   Contact, FolderLock, Database, Cloud, Watch, ShieldCheck, RefreshCw,
-  UserPlus, MessageSquare, GraduationCap, BookOpen
+  UserPlus, MessageSquare, GraduationCap, BookOpen, Scissors
 } from 'lucide-react';
 import Dashboard from './components/Dashboard';
 import TaskBoard from './components/TaskBoard';
@@ -36,16 +36,8 @@ const App: React.FC = () => {
   const [isMeetingActive, setIsMeetingActive] = useState(false);
   const [meetingContext, setMeetingContext] = useState<{title: string, type: 'Meeting' | 'Interview'}>({title: '', type: 'Meeting'});
   const [systemStaff, setSystemStaff] = useState<UserAccount[]>([]);
-  const [dbStatus, setDbStatus] = useState({ 
-    status: 'Connecting', 
-    latency: '0ms',
-    engine: 'Initializing...',
-    persistence: 'Local Transactional',
-    lastSync: 'Never'
-  });
   const [time, setTime] = useState(new Date());
-  const [isSyncing, setIsSyncing] = useState(false);
-
+  
   // Auto-collapse sidebar on mobile
   useEffect(() => {
     const handleResize = () => {
@@ -70,28 +62,12 @@ const App: React.FC = () => {
       setShowLanding(false);
     }
     loadSystemStaff();
-    checkDbHealth();
   }, []);
-
-  const checkDbHealth = async () => {
-    setIsSyncing(true);
-    await storageService.pullFromCloud();
-    const status = await storageService.getDbStatus();
-    setDbStatus(status);
-    setTimeout(() => setIsSyncing(false), 800);
-  };
 
   const loadSystemStaff = async () => {
     const users = await storageService.getUsers();
     setSystemStaff(users);
   };
-
-  useEffect(() => {
-    if (currentUser) {
-       loadSystemStaff();
-       checkDbHealth();
-    }
-  }, [activeTab]);
 
   const handleLogin = (user: UserAccount) => {
     setCurrentUser(user);
@@ -162,57 +138,82 @@ const App: React.FC = () => {
   };
 
   return (
-    <div className="flex h-screen overflow-hidden bg-zinc-950">
+    <div className="flex h-screen overflow-hidden bg-transparent">
       {isMeetingActive && <VideoConference title={meetingContext.title} type={meetingContext.type} onClose={() => setIsMeetingActive(false)} />}
       
       {/* Sidebar */}
-      <aside className={`${isSidebarOpen ? 'w-64 absolute md:relative' : 'w-20 hidden md:flex'} h-full bg-zinc-900 border-r border-zinc-800 transition-all duration-300 flex-col z-50 shadow-2xl`}>
-        <div className="p-6 flex items-center gap-3">
-          <div className="w-8 h-8 gold-gradient rounded-lg flex items-center justify-center shrink-0"><span className="text-black font-bold text-xs">G</span></div>
-          {isSidebarOpen && <h1 className="font-bold text-lg gold-text tracking-tight uppercase">GMYT Group</h1>}
+      <aside className={`${isSidebarOpen ? 'w-64 absolute md:relative' : 'w-20 hidden md:flex'} h-full bg-zinc-900/95 border-r border-zinc-800 transition-all duration-300 flex flex-col z-50 shadow-2xl backdrop-blur-md`}>
+        <div className="p-6 flex items-center gap-3 shrink-0">
+          <div className="w-8 h-8 gold-gradient rounded-lg flex items-center justify-center shrink-0 shadow-lg shadow-amber-500/20">
+             <Scissors size={16} className="text-black rotate-[-45deg]" />
+          </div>
+          {isSidebarOpen && <h1 className="font-black text-lg gold-text tracking-tighter uppercase">GMYT Group</h1>}
         </div>
-        <nav className="flex-1 px-4 py-2 space-y-1 overflow-y-auto no-scrollbar">
+        
+        {/* Navigation - Enhanced Scrollability */}
+        <nav className="flex-1 px-4 py-2 space-y-1 overflow-y-auto no-scrollbar min-h-0">
           {filteredMenu.map((item) => (
             <button 
               key={item.id} 
               onClick={() => { setActiveTab(item.id); if(window.innerWidth < 768) setIsSidebarOpen(false); }} 
-              className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all ${activeTab === item.id ? 'bg-amber-500/10 text-amber-500 font-medium' : 'text-zinc-400 hover:text-white hover:bg-zinc-800'}`}
+              className={`w-full flex items-center gap-3 px-3 py-3 rounded-xl transition-all group ${activeTab === item.id ? 'bg-zinc-800 text-amber-500 font-bold border border-zinc-700 shadow-inner' : 'text-zinc-400 hover:text-white hover:bg-zinc-800/50'}`}
             >
-              {item.icon}{isSidebarOpen && <span className="text-sm">{item.label}</span>}
+              <div className={`transition-transform ${activeTab === item.id ? 'scale-110' : 'group-hover:scale-110'}`}>{item.icon}</div>
+              {isSidebarOpen && <span className="text-xs uppercase tracking-widest">{item.label}</span>}
             </button>
           ))}
         </nav>
-        <div className="p-4 border-t border-zinc-800 space-y-2">
-          {isSidebarOpen && <button onClick={handleLogout} className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-zinc-500 hover:text-rose-500 hover:bg-rose-500/10 transition-all"><LogOut size={20} /><span className="text-xs font-bold uppercase">Sign Out</span></button>}
-          <button onClick={() => setIsSidebarOpen(!isSidebarOpen)} className="w-full flex items-center justify-center p-2 rounded-lg text-zinc-400 hover:text-white hover:bg-zinc-800 hidden md:flex">{isSidebarOpen ? <X size={20} /> : <Menu size={20} />}</button>
+
+        {/* Footer Info & Clock */}
+        <div className="p-4 border-t border-zinc-800 bg-zinc-950/30 shrink-0">
+          {isSidebarOpen && (
+            <div className="mb-4 text-center">
+               <div className="text-2xl font-black text-zinc-200 font-mono tracking-widest">
+                  {time.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+               </div>
+               <div className="text-[9px] text-zinc-500 uppercase font-bold tracking-[0.2em] mt-1">
+                  {time.toLocaleDateString([], { weekday: 'short', day: 'numeric', month: 'short' })}
+               </div>
+            </div>
+          )}
+          
+          <div className="space-y-2">
+             {isSidebarOpen && <button onClick={handleLogout} className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-zinc-500 hover:text-rose-500 hover:bg-rose-500/10 transition-all"><LogOut size={18} /><span className="text-xs font-bold uppercase tracking-widest">Sign Out</span></button>}
+             <button onClick={() => setIsSidebarOpen(!isSidebarOpen)} className="w-full flex items-center justify-center p-2 rounded-lg text-zinc-400 hover:text-white hover:bg-zinc-800 hidden md:flex">{isSidebarOpen ? <X size={20} /> : <Menu size={20} />}</button>
+          </div>
         </div>
       </aside>
 
       {/* Main Content */}
-      <main className="flex-1 flex flex-col overflow-hidden relative w-full">
+      <main className="flex-1 flex flex-col overflow-hidden relative w-full bg-zinc-950/80 backdrop-blur-sm">
         {/* Mobile Sidebar Overlay */}
         {isSidebarOpen && (
           <div className="fixed inset-0 bg-black/80 z-40 md:hidden" onClick={() => setIsSidebarOpen(false)}></div>
         )}
 
-        <header className="h-16 border-b border-zinc-800 flex items-center justify-between px-4 md:px-8 bg-zinc-900/50 backdrop-blur-md shrink-0">
+        <header className="h-20 border-b border-zinc-800 flex items-center justify-between px-4 md:px-8 bg-zinc-900/50 backdrop-blur-md shrink-0 sticky top-0 z-30">
           <div className="flex items-center gap-4">
             <button onClick={() => setIsSidebarOpen(!isSidebarOpen)} className="md:hidden text-zinc-400 hover:text-white">
                <Menu size={24} />
             </button>
-            <h3 className="text-white font-semibold flex items-center gap-2 truncate text-sm md:text-base">{menuItems.find(m => m.id === activeTab)?.label}</h3>
+            <div>
+               <h3 className="text-white font-black uppercase tracking-tight text-sm md:text-lg flex items-center gap-2">
+                  {menuItems.find(m => m.id === activeTab)?.label}
+               </h3>
+               <p className="text-[9px] text-zinc-500 font-bold uppercase tracking-[0.2em] hidden sm:block">GMYT Enterprise System v2.1</p>
+            </div>
           </div>
           <div className="flex items-center gap-4 md:gap-6">
             <div className="text-right hidden sm:block">
-              <p className="text-sm font-medium text-white">{currentUser.name}</p>
-              <p className="text-[10px] text-zinc-500 font-bold uppercase tracking-widest">{currentUser.role}</p>
+              <p className="text-sm font-bold text-white">{currentUser.name}</p>
+              <p className="text-[10px] text-amber-500 font-black uppercase tracking-widest">{currentUser.role}</p>
             </div>
-            <div className="w-8 h-8 md:w-10 md:h-10 rounded-full gold-gradient p-[1px]">
-               <div className="w-full h-full rounded-full bg-zinc-900 flex items-center justify-center overflow-hidden">
+            <div className="w-10 h-10 md:w-12 md:h-12 rounded-[1rem] gold-gradient p-[2px] shadow-lg shadow-amber-500/10">
+               <div className="w-full h-full rounded-[0.9rem] bg-zinc-900 flex items-center justify-center overflow-hidden">
                   <img 
                     src={currentUser.avatar || `https://picsum.photos/40/40?grayscale&v=${currentUser.id}`} 
                     alt="Avatar" 
-                    className="w-full h-full rounded-full object-cover" 
+                    className="w-full h-full object-cover" 
                   />
                </div>
             </div>
@@ -227,3 +228,4 @@ const App: React.FC = () => {
 };
 
 export default App;
+    
