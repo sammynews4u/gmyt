@@ -46,6 +46,18 @@ const App: React.FC = () => {
   const [time, setTime] = useState(new Date());
   const [isSyncing, setIsSyncing] = useState(false);
 
+  // Auto-collapse sidebar on mobile
+  useEffect(() => {
+    const handleResize = () => {
+      if (window.innerWidth < 768) {
+        setIsSidebarOpen(false);
+      }
+    };
+    window.addEventListener('resize', handleResize);
+    handleResize(); // Initial check
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
   useEffect(() => {
     const timer = setInterval(() => setTime(new Date()), 1000);
     return () => clearInterval(timer);
@@ -152,34 +164,50 @@ const App: React.FC = () => {
   return (
     <div className="flex h-screen overflow-hidden bg-zinc-950">
       {isMeetingActive && <VideoConference title={meetingContext.title} type={meetingContext.type} onClose={() => setIsMeetingActive(false)} />}
-      <aside className={`${isSidebarOpen ? 'w-64' : 'w-20'} bg-zinc-900 border-r border-zinc-800 transition-all duration-300 flex flex-col z-50`}>
+      
+      {/* Sidebar */}
+      <aside className={`${isSidebarOpen ? 'w-64 absolute md:relative' : 'w-20 hidden md:flex'} h-full bg-zinc-900 border-r border-zinc-800 transition-all duration-300 flex-col z-50 shadow-2xl`}>
         <div className="p-6 flex items-center gap-3">
           <div className="w-8 h-8 gold-gradient rounded-lg flex items-center justify-center shrink-0"><span className="text-black font-bold text-xs">G</span></div>
           {isSidebarOpen && <h1 className="font-bold text-lg gold-text tracking-tight uppercase">GMYT Group</h1>}
         </div>
         <nav className="flex-1 px-4 py-2 space-y-1 overflow-y-auto no-scrollbar">
           {filteredMenu.map((item) => (
-            <button key={item.id} onClick={() => setActiveTab(item.id)} className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all ${activeTab === item.id ? 'bg-amber-500/10 text-amber-500 font-medium' : 'text-zinc-400 hover:text-white hover:bg-zinc-800'}`}>
+            <button 
+              key={item.id} 
+              onClick={() => { setActiveTab(item.id); if(window.innerWidth < 768) setIsSidebarOpen(false); }} 
+              className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all ${activeTab === item.id ? 'bg-amber-500/10 text-amber-500 font-medium' : 'text-zinc-400 hover:text-white hover:bg-zinc-800'}`}
+            >
               {item.icon}{isSidebarOpen && <span className="text-sm">{item.label}</span>}
             </button>
           ))}
         </nav>
         <div className="p-4 border-t border-zinc-800 space-y-2">
           {isSidebarOpen && <button onClick={handleLogout} className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-zinc-500 hover:text-rose-500 hover:bg-rose-500/10 transition-all"><LogOut size={20} /><span className="text-xs font-bold uppercase">Sign Out</span></button>}
-          <button onClick={() => setIsSidebarOpen(!isSidebarOpen)} className="w-full flex items-center justify-center p-2 rounded-lg text-zinc-400 hover:text-white hover:bg-zinc-800">{isSidebarOpen ? <X size={20} /> : <Menu size={20} />}</button>
+          <button onClick={() => setIsSidebarOpen(!isSidebarOpen)} className="w-full flex items-center justify-center p-2 rounded-lg text-zinc-400 hover:text-white hover:bg-zinc-800 hidden md:flex">{isSidebarOpen ? <X size={20} /> : <Menu size={20} />}</button>
         </div>
       </aside>
-      <main className="flex-1 flex flex-col overflow-hidden">
-        <header className="h-16 border-b border-zinc-800 flex items-center justify-between px-8 bg-zinc-900/50 backdrop-blur-md">
+
+      {/* Main Content */}
+      <main className="flex-1 flex flex-col overflow-hidden relative w-full">
+        {/* Mobile Sidebar Overlay */}
+        {isSidebarOpen && (
+          <div className="fixed inset-0 bg-black/80 z-40 md:hidden" onClick={() => setIsSidebarOpen(false)}></div>
+        )}
+
+        <header className="h-16 border-b border-zinc-800 flex items-center justify-between px-4 md:px-8 bg-zinc-900/50 backdrop-blur-md shrink-0">
           <div className="flex items-center gap-4">
-            <h3 className="text-white font-semibold flex items-center gap-2">{menuItems.find(m => m.id === activeTab)?.label}</h3>
+            <button onClick={() => setIsSidebarOpen(!isSidebarOpen)} className="md:hidden text-zinc-400 hover:text-white">
+               <Menu size={24} />
+            </button>
+            <h3 className="text-white font-semibold flex items-center gap-2 truncate text-sm md:text-base">{menuItems.find(m => m.id === activeTab)?.label}</h3>
           </div>
-          <div className="flex items-center gap-6">
+          <div className="flex items-center gap-4 md:gap-6">
             <div className="text-right hidden sm:block">
               <p className="text-sm font-medium text-white">{currentUser.name}</p>
               <p className="text-[10px] text-zinc-500 font-bold uppercase tracking-widest">{currentUser.role}</p>
             </div>
-            <div className="w-10 h-10 rounded-full gold-gradient p-[1px]">
+            <div className="w-8 h-8 md:w-10 md:h-10 rounded-full gold-gradient p-[1px]">
                <div className="w-full h-full rounded-full bg-zinc-900 flex items-center justify-center overflow-hidden">
                   <img 
                     src={currentUser.avatar || `https://picsum.photos/40/40?grayscale&v=${currentUser.id}`} 
@@ -190,7 +218,9 @@ const App: React.FC = () => {
             </div>
           </div>
         </header>
-        <section className="flex-1 overflow-y-auto no-scrollbar p-8">{renderContent()}</section>
+        <section className="flex-1 overflow-y-auto no-scrollbar p-4 md:p-8 relative">
+          {renderContent()}
+        </section>
       </main>
     </div>
   );
