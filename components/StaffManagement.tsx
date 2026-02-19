@@ -1,11 +1,11 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { 
   Users, Search, UserPlus, Mail, Phone, Briefcase, 
   Banknote, TrendingUp, UserMinus, ShieldCheck, 
   Loader2, MoreVertical, X, Save, ClipboardList,
   AlertCircle, ChevronRight, Contact, MapPin, CalendarDays, ShieldAlert,
-  Settings2, FileText
+  Settings2, FileText, Camera, Lock, Key, ListChecks
 } from 'lucide-react';
 import { storageService } from '../services/storageService';
 import { UserAccount, UserRole, Paycheck } from '../types';
@@ -35,6 +35,7 @@ const StaffManagement: React.FC<StaffManagementProps> = ({ role }) => {
   const [selectedStaff, setSelectedStaff] = useState<UserAccount | null>(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const isCEO = role === 'CEO';
 
@@ -76,6 +77,21 @@ const StaffManagement: React.FC<StaffManagementProps> = ({ role }) => {
     if (currentIndex < roles.length - 1) {
       const nextRole = roles[currentIndex + 1];
       setSelectedStaff({ ...staff, role: nextRole });
+    }
+  };
+
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file && selectedStaff) {
+      if (file.size > 2 * 1024 * 1024) {
+        alert("Image size too large. Please select an image under 2MB.");
+        return;
+      }
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setSelectedStaff({ ...selectedStaff, avatar: reader.result as string });
+      };
+      reader.readAsDataURL(file);
     }
   };
 
@@ -124,7 +140,11 @@ const StaffManagement: React.FC<StaffManagementProps> = ({ role }) => {
               <div className="flex items-center gap-6">
                 <div className="w-20 h-20 rounded-[1.75rem] gold-gradient p-[1.5px] shadow-2xl shadow-amber-500/10">
                   <div className="w-full h-full rounded-[1.75rem] bg-zinc-950 flex items-center justify-center overflow-hidden">
-                    <img src={`https://picsum.photos/100/100?grayscale&v=${user.id}`} alt={user.name} className="w-full h-full object-cover opacity-80 group-hover:scale-110 transition-transform duration-500" />
+                    <img 
+                      src={user.avatar || `https://picsum.photos/100/100?grayscale&v=${user.id}`} 
+                      alt={user.name} 
+                      className="w-full h-full object-cover opacity-90 group-hover:scale-110 transition-transform duration-500" 
+                    />
                   </div>
                 </div>
                 <div>
@@ -192,10 +212,21 @@ const StaffManagement: React.FC<StaffManagementProps> = ({ role }) => {
           <form onSubmit={handleUpdateStaff} className="relative w-full max-w-5xl bg-zinc-950 border border-zinc-800 rounded-[4rem] p-12 max-h-[95vh] overflow-y-auto no-scrollbar shadow-2xl animate-in zoom-in duration-500">
             <div className="flex justify-between items-start mb-12">
               <div className="flex items-center gap-8">
-                <div className="w-32 h-32 rounded-[2.5rem] gold-gradient p-[2px] shadow-2xl shadow-amber-500/10">
-                  <div className="w-full h-full rounded-[2.5rem] bg-zinc-950 flex items-center justify-center overflow-hidden">
-                    <img src={`https://picsum.photos/150/150?grayscale&v=${selectedStaff.id}`} alt={selectedStaff.name} className="w-full h-full object-cover" />
-                  </div>
+                <div className="relative group cursor-pointer" onClick={() => fileInputRef.current?.click()}>
+                   <input type="file" ref={fileInputRef} className="hidden" accept="image/*" onChange={handleImageUpload} />
+                   <div className="w-32 h-32 rounded-[2.5rem] gold-gradient p-[2px] shadow-2xl shadow-amber-500/10">
+                      <div className="w-full h-full rounded-[2.5rem] bg-zinc-950 flex items-center justify-center overflow-hidden relative">
+                         <img 
+                            src={selectedStaff.avatar || `https://picsum.photos/150/150?grayscale&v=${selectedStaff.id}`} 
+                            alt={selectedStaff.name} 
+                            className="w-full h-full object-cover group-hover:opacity-50 transition-opacity" 
+                         />
+                         <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                            <Camera className="text-amber-500" size={32} />
+                         </div>
+                      </div>
+                   </div>
+                   <p className="text-[9px] font-black text-zinc-500 uppercase text-center mt-2">Click to Update Photo</p>
                 </div>
                 <div>
                   <h2 className="text-4xl font-black text-white tracking-tight">{selectedStaff.name}</h2>
@@ -244,14 +275,41 @@ const StaffManagement: React.FC<StaffManagementProps> = ({ role }) => {
                     />
                   </div>
                 </div>
+
+                {isCEO && (
+                  <>
+                    <h3 className="text-xs font-black text-rose-500 uppercase tracking-[0.4em] pb-3 border-b border-zinc-900 mt-8">System Credentials</h3>
+                    <div className="space-y-6">
+                       <div className="space-y-2">
+                          <label className="text-[10px] font-black text-zinc-600 uppercase tracking-widest ml-1 flex items-center gap-2"><Lock size={12}/> Access Username</label>
+                          <input 
+                             type="text"
+                             className="w-full bg-zinc-950 border border-zinc-800 rounded-2xl py-4 px-6 text-sm focus:border-rose-500 outline-none font-bold text-white shadow-inner"
+                             value={selectedStaff.username}
+                             onChange={e => setSelectedStaff({...selectedStaff, username: e.target.value})}
+                          />
+                       </div>
+                       <div className="space-y-2">
+                          <label className="text-[10px] font-black text-zinc-600 uppercase tracking-widest ml-1 flex items-center gap-2"><Key size={12}/> Access Password</label>
+                          <input 
+                             type="text"
+                             className="w-full bg-zinc-950 border border-zinc-800 rounded-2xl py-4 px-6 text-sm focus:border-rose-500 outline-none font-bold text-white shadow-inner"
+                             value={selectedStaff.password || ''}
+                             onChange={e => setSelectedStaff({...selectedStaff, password: e.target.value})}
+                             placeholder="Set new password..."
+                          />
+                       </div>
+                    </div>
+                  </>
+                )}
               </div>
 
               <div className="space-y-8">
-                <h3 className="text-xs font-black text-zinc-500 uppercase tracking-[0.4em] pb-3 border-b border-zinc-900">Master Job Description</h3>
+                <h3 className="text-xs font-black text-zinc-500 uppercase tracking-[0.4em] pb-3 border-b border-zinc-900">Operational Directives</h3>
                 <div className="space-y-6">
                   <div className="space-y-2">
                     <label className="text-[10px] font-black text-amber-500 uppercase tracking-widest ml-1 flex items-center gap-2">
-                      <FileText size={12} /> Master Directive for Task Sheet
+                      <FileText size={12} /> Master Job Description
                     </label>
                     <textarea 
                       rows={6}
@@ -260,7 +318,21 @@ const StaffManagement: React.FC<StaffManagementProps> = ({ role }) => {
                       onChange={e => setSelectedStaff({...selectedStaff, jobDescription: e.target.value})}
                       placeholder="Specify the full corporate directive for this role..."
                     />
-                    <p className="text-[9px] text-zinc-600 uppercase font-bold italic">This description will auto-populate the staff member's weekly SMART task sheet.</p>
+                    <p className="text-[9px] text-zinc-600 uppercase font-bold italic">Auto-populates weekly SMART task sheet.</p>
+                  </div>
+
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black text-blue-500 uppercase tracking-widest ml-1 flex items-center gap-2">
+                      <ListChecks size={12} /> Daily Standard Operating Procedure (SOP)
+                    </label>
+                    <textarea 
+                      rows={8}
+                      className="w-full bg-zinc-900 border border-zinc-800 rounded-2xl py-4 px-6 text-xs focus:border-blue-500 outline-none font-medium text-white shadow-inner resize-none leading-relaxed" 
+                      value={selectedStaff.dailySop || ''} 
+                      onChange={e => setSelectedStaff({...selectedStaff, dailySop: e.target.value})}
+                      placeholder="1. Clock in by 9:00 AM&#10;2. Check inventory levels&#10;3. Submit daily report..."
+                    />
+                    <p className="text-[9px] text-zinc-600 uppercase font-bold italic">Visible on staff dashboard as daily standing orders.</p>
                   </div>
                   
                   {isCEO && (

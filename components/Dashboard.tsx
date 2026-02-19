@@ -1,9 +1,10 @@
 
 import React, { useState, useEffect } from 'react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area } from 'recharts';
-import { Target, AlertTriangle, CheckCircle2, Clock, Banknote, Users, Briefcase, Quote, Sparkles, Loader2 } from 'lucide-react';
+import { Target, AlertTriangle, CheckCircle2, Clock, Banknote, Users, Briefcase, Quote, Sparkles, Loader2, ListChecks } from 'lucide-react';
 import { UserRole } from '../types';
 import { getDailyMotivation } from '../services/geminiService';
+import { storageService } from '../services/storageService';
 
 interface DashboardProps {
   role: UserRole;
@@ -29,9 +30,11 @@ const Dashboard: React.FC<DashboardProps> = ({ role }) => {
   const isFinancial = role === 'CEO' || role === 'Accountant';
   const [motivation, setMotivation] = useState<string | null>(null);
   const [isMotivationLoading, setIsMotivationLoading] = useState(true);
+  const [dailySop, setDailySop] = useState<string | null>(null);
 
   useEffect(() => {
     fetchMotivation();
+    fetchUserSop();
   }, []);
 
   const fetchMotivation = async () => {
@@ -41,34 +44,61 @@ const Dashboard: React.FC<DashboardProps> = ({ role }) => {
     setIsMotivationLoading(false);
   };
 
+  const fetchUserSop = async () => {
+    const saved = localStorage.getItem('gmyt_session');
+    if (saved) {
+      const user = JSON.parse(saved);
+      // Fetch latest user data to get updated SOP
+      const users = await storageService.getUsers();
+      const currentUser = users.find(u => u.id === user.id);
+      if (currentUser?.dailySop) {
+        setDailySop(currentUser.dailySop);
+      }
+    }
+  };
+
   return (
     <div className="space-y-8 animate-in fade-in duration-500">
-      {/* Daily Motivation Card */}
-      <div className="bg-zinc-900 border border-zinc-800 rounded-[2.5rem] p-8 shadow-2xl relative overflow-hidden group">
-        <div className="absolute top-0 right-0 p-8 opacity-5 group-hover:scale-110 group-hover:text-amber-500 transition-all duration-700">
-           <Quote size={120} />
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        {/* Daily Motivation Card */}
+        <div className="bg-zinc-900 border border-zinc-800 rounded-[2.5rem] p-8 shadow-2xl relative overflow-hidden group">
+          <div className="absolute top-0 right-0 p-8 opacity-5 group-hover:scale-110 group-hover:text-amber-500 transition-all duration-700">
+            <Quote size={120} />
+          </div>
+          <div className="flex flex-col md:flex-row items-center gap-8 relative z-10">
+            <div className="w-16 h-16 rounded-3xl bg-amber-500/10 flex items-center justify-center text-amber-500 shadow-xl shadow-amber-500/5 shrink-0">
+                {isMotivationLoading ? <Loader2 className="animate-spin" size={24} /> : <Sparkles size={24} />}
+            </div>
+            <div className="flex-1 space-y-2 text-center md:text-left">
+                <h4 className="text-[10px] font-black text-zinc-500 uppercase tracking-[0.4em]">Strategic Insight</h4>
+                {isMotivationLoading ? (
+                  <div className="h-6 w-3/4 bg-zinc-800 animate-pulse rounded-lg mx-auto md:mx-0"></div>
+                ) : (
+                  <p className="text-lg font-bold text-white tracking-tight leading-relaxed italic">
+                      "{motivation}"
+                  </p>
+                )}
+            </div>
+          </div>
         </div>
-        <div className="flex flex-col md:flex-row items-center gap-8 relative z-10">
-           <div className="w-16 h-16 rounded-3xl bg-amber-500/10 flex items-center justify-center text-amber-500 shadow-xl shadow-amber-500/5">
-              {isMotivationLoading ? <Loader2 className="animate-spin" size={24} /> : <Sparkles size={24} />}
-           </div>
-           <div className="flex-1 space-y-2 text-center md:text-left">
-              <h4 className="text-[10px] font-black text-zinc-500 uppercase tracking-[0.4em]">Strategic Insight / Daily Alignment</h4>
-              {isMotivationLoading ? (
-                 <div className="h-6 w-3/4 bg-zinc-800 animate-pulse rounded-lg mx-auto md:mx-0"></div>
-              ) : (
-                 <p className="text-xl font-bold text-white tracking-tight leading-relaxed italic">
-                    "{motivation}"
-                 </p>
-              )}
-           </div>
-           <button 
-             onClick={fetchMotivation}
-             className="px-6 py-2.5 bg-zinc-800 border border-zinc-700 text-zinc-400 rounded-xl text-[10px] font-black uppercase tracking-widest hover:text-white hover:bg-zinc-700 transition-all"
-           >
-              Refresh Mindset
-           </button>
-        </div>
+
+        {/* Daily SOP Card - Only shows if SOP is defined */}
+        {dailySop && (
+          <div className="bg-zinc-900 border border-zinc-800 rounded-[2.5rem] p-8 shadow-2xl relative overflow-hidden group">
+            <div className="absolute top-0 right-0 p-8 opacity-5">
+              <ListChecks size={120} />
+            </div>
+            <div className="relative z-10 space-y-4">
+               <div className="flex items-center gap-4">
+                  <div className="p-3 bg-blue-500/10 rounded-2xl text-blue-500"><ListChecks size={20} /></div>
+                  <h4 className="text-[12px] font-black text-blue-500 uppercase tracking-[0.3em]">Daily Standing Orders (SOP)</h4>
+               </div>
+               <div className="bg-zinc-950/50 rounded-2xl p-6 border border-zinc-800/50 max-h-32 overflow-y-auto no-scrollbar">
+                  <p className="text-sm text-zinc-300 font-medium whitespace-pre-wrap leading-relaxed">{dailySop}</p>
+               </div>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Header Stats */}

@@ -245,7 +245,7 @@ export default function StrategicChat({ user, staff }: StrategicChatProps) {
                 >
                   <div className="relative shrink-0">
                     <div className="w-14 h-14 rounded-2xl bg-zinc-950 border border-zinc-800 flex items-center justify-center overflow-hidden">
-                       <img src={`https://picsum.photos/60/60?grayscale&v=${s.id}`} alt={s.name} className="w-full h-full object-cover opacity-60 group-hover:scale-110 transition-transform" />
+                       <img src={s.avatar || `https://picsum.photos/60/60?grayscale&v=${s.id}`} alt={s.name} className="w-full h-full object-cover opacity-60 group-hover:scale-110 transition-transform" />
                     </div>
                     <div className="absolute -bottom-1 -right-1 w-4 h-4 rounded-full bg-emerald-500 border-2 border-zinc-900 shadow-lg"></div>
                   </div>
@@ -279,7 +279,7 @@ export default function StrategicChat({ user, staff }: StrategicChatProps) {
           <div className="flex items-center gap-5">
              <div className="w-14 h-14 rounded-2xl bg-zinc-900 border border-zinc-800 flex items-center justify-center text-amber-500 overflow-hidden">
                {activeDirectId ? (
-                 <img src={`https://picsum.photos/60/60?grayscale&v=${activeDirectId}`} alt="Node" className="w-full h-full object-cover opacity-80" />
+                 <img src={staff.find(s => s.id === activeDirectId)?.avatar || `https://picsum.photos/60/60?grayscale&v=${activeDirectId}`} alt="Node" className="w-full h-full object-cover opacity-80" />
                ) : (
                  <div className="p-3 bg-amber-500/10"><Hash size={24} /></div>
                )}
@@ -323,6 +323,7 @@ export default function StrategicChat({ user, staff }: StrategicChatProps) {
           <div className="max-w-4xl mx-auto space-y-8">
             {currentChatMessages.map((msg, i) => {
               const isMine = msg.senderId === user.id;
+              const sender = staff.find(s => s.id === msg.senderId) || { avatar: null };
               const showDate = i === 0 || new Date(msg.timestamp).toDateString() !== new Date(currentChatMessages[i-1].timestamp).toDateString();
 
               return (
@@ -336,7 +337,7 @@ export default function StrategicChat({ user, staff }: StrategicChatProps) {
                   )}
                   <div className={`flex items-start gap-6 ${isMine ? 'flex-row-reverse' : ''}`}>
                     <div className="w-12 h-12 rounded-2xl bg-zinc-900 border border-zinc-800 flex-shrink-0 flex items-center justify-center overflow-hidden shadow-xl">
-                       <img src={`https://picsum.photos/48/48?grayscale&v=${msg.senderId}`} alt={msg.senderName} />
+                       <img src={sender.avatar || `https://picsum.photos/48/48?grayscale&v=${msg.senderId}`} alt={msg.senderName} className="w-full h-full object-cover" />
                     </div>
                     <div className={`max-w-[80%] space-y-2 ${isMine ? 'text-right' : ''}`}>
                       <div className={`flex items-center gap-3 ${isMine ? 'flex-row-reverse' : ''}`}>

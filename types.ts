@@ -9,6 +9,7 @@ export interface UserAccount {
   role: UserRole;
   username: string;
   password?: string;
+  avatar?: string; // Base64 Image String
   // Staff Profile Details
   title?: string;
   position?: string;
@@ -17,6 +18,7 @@ export interface UserAccount {
   salary?: number;
   department?: string;
   jobDescription?: string; // Persistent Job Description for Task Sheet
+  dailySop?: string; // Daily Standard Operating Procedure
   joinDate?: string;
   status?: 'Active' | 'Suspended' | 'Terminated';
 }

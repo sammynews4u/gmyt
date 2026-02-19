@@ -5,7 +5,7 @@ import {
   Calendar, Menu, X, ChevronRight, UserCircle, Briefcase, 
   Settings, MessageSquareWarning, Users, Clock, LogOut,
   Contact, FolderLock, Database, Cloud, Watch, ShieldCheck, RefreshCw,
-  UserPlus, MessageSquare
+  UserPlus, MessageSquare, GraduationCap, BookOpen
 } from 'lucide-react';
 import Dashboard from './components/Dashboard';
 import TaskBoard from './components/TaskBoard';
@@ -20,6 +20,7 @@ import CommunicationCenter from './components/CommunicationCenter';
 import CompanySettings from './components/CompanySettings';
 import VideoConference from './components/VideoConference';
 import AttendanceRegister from './components/AttendanceRegister';
+import StrategicAcademy from './components/StrategicAcademy';
 import Login from './components/Login';
 import StaffManagement from './components/StaffManagement';
 import HiringPortal from './components/HiringPortal';
@@ -99,6 +100,7 @@ const App: React.FC = () => {
 
   const menuItems = [
     { id: 'dashboard', label: 'Dashboard', icon: <LayoutDashboard size={20} />, roles: ['CEO', 'Project Manager', 'Staff', 'Accountant'] },
+    { id: 'academy', label: 'Strategic Academy', icon: <GraduationCap size={20} />, roles: ['CEO', 'Project Manager', 'Staff', 'Accountant'] },
     { id: 'attendance', label: 'Attendance', icon: <Clock size={20} />, roles: ['CEO', 'Project Manager', 'Staff', 'Accountant'] },
     { id: 'chat', label: 'Strategic Comms', icon: <MessageSquare size={20} />, roles: ['CEO', 'Project Manager', 'Staff', 'Accountant'] },
     { id: 'staff-management', label: 'Staff Management', icon: <Contact size={20} />, roles: ['CEO'] },
@@ -129,6 +131,7 @@ const App: React.FC = () => {
     const user = currentUser!;
     switch (activeTab) {
       case 'dashboard': return <Dashboard role={currentRole} />;
+      case 'academy': return <StrategicAcademy role={currentRole} />;
       case 'attendance': return <AttendanceRegister user={user} />;
       case 'chat': return <StrategicChat user={user} staff={systemStaff} />;
       case 'staff-management': return <StaffManagement role={currentRole} />;
@@ -176,7 +179,15 @@ const App: React.FC = () => {
               <p className="text-sm font-medium text-white">{currentUser.name}</p>
               <p className="text-[10px] text-zinc-500 font-bold uppercase tracking-widest">{currentUser.role}</p>
             </div>
-            <div className="w-10 h-10 rounded-full gold-gradient p-[1px]"><div className="w-full h-full rounded-full bg-zinc-900 flex items-center justify-center"><img src={`https://picsum.photos/40/40?grayscale&v=${currentUser.id}`} alt="Avatar" className="w-full h-full rounded-full object-cover" /></div></div>
+            <div className="w-10 h-10 rounded-full gold-gradient p-[1px]">
+               <div className="w-full h-full rounded-full bg-zinc-900 flex items-center justify-center overflow-hidden">
+                  <img 
+                    src={currentUser.avatar || `https://picsum.photos/40/40?grayscale&v=${currentUser.id}`} 
+                    alt="Avatar" 
+                    className="w-full h-full rounded-full object-cover" 
+                  />
+               </div>
+            </div>
           </div>
         </header>
         <section className="flex-1 overflow-y-auto no-scrollbar p-8">{renderContent()}</section>
