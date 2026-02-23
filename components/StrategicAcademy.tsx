@@ -13,7 +13,51 @@ interface AcademyProps {
 }
 
 export default function StrategicAcademy({ role }: AcademyProps) {
-  const [activeSection, setActiveSection] = useState<'framework' | 'walkthrough' | 'roles' | 'onboarding'>('framework');
+  const [activeSection, setActiveSection] = useState<'framework' | 'walkthrough' | 'roles' | 'onboarding' | 'jd-training'>('framework');
+
+  const walkthroughSteps = [
+    {
+      title: 'The Morning Ritual (09:00 AM)',
+      icon: <Clock className="text-amber-500" />,
+      content: 'Every operational day begins with the Attendance Register. Clocking in before 09:00 AM is not just about presence; it initializes your node in the system, allowing the Project Manager to assign SMART tasks to your profile.'
+    },
+    {
+      title: 'Directive Acquisition',
+      icon: <Target className="text-blue-500" />,
+      content: 'Once clocked in, navigate to the SMART Task Sheet. Here, you will find your strategic directives. Each task is analyzed through the PRRR protocol (Problem, Root Cause, Risk) to ensure you understand the "Why" before the "How".'
+    },
+    {
+      title: 'The Execution Phase',
+      icon: <Zap className="text-emerald-500" />,
+      content: 'Execute your tasks based on the SMART criteria. If you encounter friction, use the Strategic Hub (Chat) to communicate with your department or the ICT Nexus for technical support.'
+    },
+    {
+      title: 'EOD Reporting (SKRC)',
+      icon: <FileText className="text-rose-500" />,
+      content: 'Before clocking out, you must submit an SKRC report for every task. This includes your Key Results, Reflections on the process, and any Challenges faced. This data feeds into your KPI Performance metrics.'
+    }
+  ];
+
+  const jdTrainingContent = [
+    {
+      title: 'What is a Strategic Job Description?',
+      desc: 'At GMYT, a Job Description (JD) is not a static list of duties. It is a dynamic Core Objective that defines your purpose within the ecosystem.',
+      points: [
+        'Binary Clarity: Every duty must have a clear "Done" or "Not Done" state.',
+        'Strategic Alignment: Your JD must contribute directly to the company\'s weekly goals.',
+        'Evolutionary: JDs are updated as you master your node and take on more complexity.'
+      ]
+    },
+    {
+      title: 'Writing SMART Tasks from your JD',
+      desc: 'How to translate your general duties into daily actionable tasks:',
+      points: [
+        'Identify the Problem: What is preventing your JD from being 100% effective today?',
+        'Apply SMART: Turn that duty into a Specific, Measurable, Attainable, Relevant, and Time-bound goal.',
+        'Risk Mitigation: What happens if this JD duty is ignored today?'
+      ]
+    }
+  ];
 
   const frameworkContent = [
     {
@@ -122,6 +166,7 @@ export default function StrategicAcademy({ role }: AcademyProps) {
          {[
            { id: 'framework', label: 'Framework Mastery', icon: <Zap size={16} /> },
            { id: 'roles', label: 'Role Responsibilities', icon: <ShieldCheck size={16} /> },
+           { id: 'jd-training', label: 'JD Training', icon: <Briefcase size={16} /> },
            { id: 'walkthrough', label: 'Platform Walkthrough', icon: <Layout size={16} /> },
            { id: 'onboarding', label: 'Quick-Start Guide', icon: <Rocket size={16} /> }
          ].map(tab => (
@@ -210,6 +255,53 @@ export default function StrategicAcademy({ role }: AcademyProps) {
                  </div>
               </div>
            ))}
+        </div>
+      )}
+
+      {/* JD Training */}
+      {activeSection === 'jd-training' && (
+        <div className="space-y-12 animate-in slide-in-from-bottom-10 duration-700">
+           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+              {jdTrainingContent.map((item, idx) => (
+                 <div key={idx} className="bg-zinc-900 border border-zinc-800 p-10 md:p-12 rounded-[3rem] shadow-2xl space-y-8">
+                    <div className="flex items-center gap-6">
+                       <div className="w-16 h-16 rounded-2xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-500">
+                          <Briefcase size={32} />
+                       </div>
+                       <h3 className="text-2xl font-black text-white uppercase tracking-tight">{item.title}</h3>
+                    </div>
+                    <p className="text-zinc-400 text-sm leading-relaxed font-medium">{item.desc}</p>
+                    <div className="space-y-4">
+                       {item.points.map((point, i) => (
+                          <div key={i} className="flex items-center gap-4 p-4 bg-zinc-950 rounded-2xl border border-zinc-800">
+                             <div className="w-2 h-2 rounded-full bg-amber-500"></div>
+                             <span className="text-xs text-zinc-300 font-bold">{point}</span>
+                          </div>
+                       ))}
+                    </div>
+                 </div>
+              ))}
+           </div>
+        </div>
+      )}
+
+      {/* Walkthrough */}
+      {activeSection === 'walkthrough' && (
+        <div className="space-y-12 animate-in slide-in-from-bottom-10 duration-700">
+           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {walkthroughSteps.map((step, idx) => (
+                 <div key={idx} className="bg-zinc-900 border border-zinc-800 p-8 md:p-10 rounded-[2.5rem] shadow-2xl flex flex-col gap-6 group hover:border-blue-500/30 transition-all">
+                    <div className="flex items-center justify-between">
+                       <div className="p-4 bg-zinc-950 rounded-2xl border border-zinc-800 text-blue-500 group-hover:scale-110 transition-transform">
+                          {step.icon}
+                       </div>
+                       <span className="text-4xl font-black text-zinc-800">0{idx + 1}</span>
+                    </div>
+                    <h3 className="text-xl font-black text-white uppercase tracking-tight">{step.title}</h3>
+                    <p className="text-sm text-zinc-500 leading-relaxed font-medium">{step.content}</p>
+                 </div>
+              ))}
+           </div>
         </div>
       )}
 

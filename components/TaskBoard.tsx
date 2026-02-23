@@ -299,7 +299,7 @@ export default function TaskBoard({ user, staff }: TaskBoardProps) {
                          <div className="font-black text-amber-500">#{task.sn}</div>
                          <div className="text-[10px] text-zinc-500 mt-1 font-bold">{task.dateLogged || 'N/A'}</div>
                       </td>
-                      <td className="p-4 border-r border-zinc-800 font-bold text-white whitespace-pre-wrap">{task.role}</td>
+                      <td className="p-4 border-r border-zinc-800 font-black text-white whitespace-pre-wrap text-sm leading-tight bg-zinc-900/30">{task.role}</td>
                       <td className="p-4 border-r border-zinc-800 whitespace-pre-wrap line-clamp-2">{task.problem.description}</td>
                       <td className="p-4 border-r border-zinc-800 whitespace-pre-wrap line-clamp-2">{task.problem.rootCauseAndConsequences}</td>
                       <td className="p-4 border-r border-zinc-800 text-rose-400 whitespace-pre-wrap line-clamp-2">{task.problem.risk}</td>
@@ -336,7 +336,7 @@ export default function TaskBoard({ user, staff }: TaskBoardProps) {
                                        <Activity size={28} />
                                     </div>
                                     <div>
-                                       <h3 className="text-xl font-black text-white uppercase tracking-tight">{task.role}</h3>
+                                       <h3 className="text-2xl font-black gold-text uppercase tracking-tighter leading-none mb-1">{task.role}</h3>
                                        <div className="flex items-center gap-3 mt-2">
                                           <span className="text-xs font-bold text-zinc-500 uppercase tracking-widest">{task.responsibleParty}</span>
                                           <span className="w-1.5 h-1.5 rounded-full bg-zinc-700"></span>
@@ -444,8 +444,8 @@ export default function TaskBoard({ user, staff }: TaskBoardProps) {
                    <div className="space-y-2">
                       <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest ml-1">Job Description / Role</label>
                       <div className="flex gap-2">
-                        <textarea rows={1} className="flex-1 bg-zinc-900 border border-zinc-800 p-4 rounded-xl text-xs text-white focus:border-amber-500 outline-none resize-none" value={formTask.role} onChange={e => setFormTask({...formTask, role: e.target.value})} placeholder="e.g. Head of ICT Duties" />
-                        <button onClick={handleAiGenerate} className="p-3 bg-zinc-900 border border-zinc-800 rounded-xl text-amber-500 hover:text-white" title="AI Auto-Fill"><Wand2 size={18} /></button>
+                        <textarea rows={4} className="flex-1 bg-zinc-900 border border-zinc-800 p-5 rounded-2xl text-sm font-bold text-white focus:border-amber-500 outline-none resize-none shadow-inner leading-relaxed" value={formTask.role} onChange={e => setFormTask({...formTask, role: e.target.value})} placeholder="e.g. Head of ICT Duties: Oversee, manage and ensure full functionality of all ICT systems..." />
+                        <button onClick={handleAiGenerate} className="p-4 bg-zinc-900 border border-zinc-800 rounded-2xl text-amber-500 hover:text-white hover:bg-amber-500/10 transition-all" title="AI Auto-Fill"><Wand2 size={24} /></button>
                       </div>
                    </div>
                    <div className="space-y-2">

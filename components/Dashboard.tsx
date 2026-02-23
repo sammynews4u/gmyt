@@ -40,7 +40,7 @@ const Dashboard: React.FC<DashboardProps> = ({ role }) => {
   const fetchMotivation = async () => {
     setIsMotivationLoading(true);
     const quote = await getDailyMotivation();
-    setMotivation(quote);
+    setMotivation(quote || "Precision in strategy is the path to excellence.");
     setIsMotivationLoading(false);
   };
 
