@@ -15,7 +15,7 @@
     "isolatedModules": true,
     "noEmit": true,
     "jsx": "react-jsx",
-    "types": ["vite/client", "node", "@vercel/node"]
+    "types": ["vite/client", "node"]
   },
   "include": ["src", "types.ts", "App.tsx", "index.tsx", "services", "components", "api"]
 }
