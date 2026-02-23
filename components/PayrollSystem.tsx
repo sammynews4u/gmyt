@@ -24,6 +24,12 @@ const PayrollSystem: React.FC<PayrollProps> = ({ role }) => {
 
   useEffect(() => {
     loadPayroll();
+
+    const handleSyncComplete = () => {
+      loadPayroll();
+    };
+    window.addEventListener('gmyt-sync-complete', handleSyncComplete);
+    return () => window.removeEventListener('gmyt-sync-complete', handleSyncComplete);
   }, []);
 
   const loadPayroll = async () => {

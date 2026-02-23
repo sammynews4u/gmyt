@@ -38,6 +38,12 @@ export default function InventorySystem({ user }: InventorySystemProps) {
 
   useEffect(() => {
     loadInventory();
+
+    const handleSyncComplete = () => {
+      loadInventory();
+    };
+    window.addEventListener('gmyt-sync-complete', handleSyncComplete);
+    return () => window.removeEventListener('gmyt-sync-complete', handleSyncComplete);
   }, []);
 
   const loadInventory = async () => {

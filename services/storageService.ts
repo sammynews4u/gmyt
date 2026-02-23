@@ -52,9 +52,13 @@ export const storageService = {
         const success = await storageService.importDatabase(JSON.stringify(result.data));
         if (success) {
           localStorage.setItem('gmyt_last_sync', new Date().toISOString());
+          // Notify the app that data has been synchronized
+          window.dispatchEvent(new CustomEvent('gmyt-sync-complete'));
           return true;
         }
       } else {
+        // If data is null, it means the key exists but has no data yet.
+        // We should push our current local state to initialize it.
         await storageService.forcePushAll();
         return true;
       }
@@ -117,7 +121,7 @@ export const storageService = {
         jobDescription: 'Oversee, manage and ensure full functionality of all ICT systems across the organization.'
       };
       await dbEngine.putBulk(STORES.USERS, [ceo, ictManager]);
-      storageService.pushToCloud();
+      // Removed auto-push to cloud during local initialization to prevent overwriting cloud data on new nodes
       return [ceo, ictManager];
     }
     return users;

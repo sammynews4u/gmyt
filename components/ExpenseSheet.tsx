@@ -28,6 +28,12 @@ export default function ExpenseSheet({ user }: ExpenseSheetProps) {
 
   useEffect(() => {
     loadExpenses();
+
+    const handleSyncComplete = () => {
+      loadExpenses();
+    };
+    window.addEventListener('gmyt-sync-complete', handleSyncComplete);
+    return () => window.removeEventListener('gmyt-sync-complete', handleSyncComplete);
   }, []);
 
   const loadExpenses = async () => {

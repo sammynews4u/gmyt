@@ -61,7 +61,25 @@ const App: React.FC = () => {
       setCurrentUser(JSON.parse(saved));
       setShowLanding(false);
     }
-    loadSystemStaff();
+    
+    const initData = async () => {
+      // Check for sync key and pull latest data on start
+      const key = await storageService.getSyncKey();
+      if (key) {
+        await storageService.pullFromCloud();
+      }
+      await loadSystemStaff();
+    };
+
+    initData();
+
+    // Listen for sync completion events from storage service
+    const handleSyncComplete = () => {
+      loadSystemStaff();
+    };
+    window.addEventListener('gmyt-sync-complete', handleSyncComplete);
+    
+    return () => window.removeEventListener('gmyt-sync-complete', handleSyncComplete);
   }, []);
 
   const loadSystemStaff = async () => {

@@ -41,6 +41,12 @@ const StaffManagement: React.FC<StaffManagementProps> = ({ role }) => {
 
   useEffect(() => {
     loadUsers();
+
+    const handleSyncComplete = () => {
+      loadUsers();
+    };
+    window.addEventListener('gmyt-sync-complete', handleSyncComplete);
+    return () => window.removeEventListener('gmyt-sync-complete', handleSyncComplete);
   }, []);
 
   const loadUsers = async () => {

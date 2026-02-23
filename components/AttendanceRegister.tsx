@@ -16,6 +16,12 @@ const AttendanceRegister: React.FC<AttendanceProps> = ({ user }) => {
 
   useEffect(() => {
     loadAttendance();
+
+    const handleSyncComplete = () => {
+      loadAttendance();
+    };
+    window.addEventListener('gmyt-sync-complete', handleSyncComplete);
+    return () => window.removeEventListener('gmyt-sync-complete', handleSyncComplete);
   }, []);
 
   const loadAttendance = async () => {

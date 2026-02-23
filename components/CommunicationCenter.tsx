@@ -15,6 +15,12 @@ const CommunicationCenter: React.FC<CommProps> = ({ role }) => {
 
   useEffect(() => {
     loadComplaints();
+
+    const handleSyncComplete = () => {
+      loadComplaints();
+    };
+    window.addEventListener('gmyt-sync-complete', handleSyncComplete);
+    return () => window.removeEventListener('gmyt-sync-complete', handleSyncComplete);
   }, []);
 
   const loadComplaints = async () => {

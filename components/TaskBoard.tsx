@@ -58,6 +58,13 @@ export default function TaskBoard({ user, staff }: TaskBoardProps) {
 
   useEffect(() => {
     loadTasks();
+
+    // Listen for sync completion to refresh task list
+    const handleSyncComplete = () => {
+      loadTasks();
+    };
+    window.addEventListener('gmyt-sync-complete', handleSyncComplete);
+    return () => window.removeEventListener('gmyt-sync-complete', handleSyncComplete);
   }, []);
 
   const loadTasks = async () => {
