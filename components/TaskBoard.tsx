@@ -56,6 +56,8 @@ export default function TaskBoard({ user, staff }: TaskBoardProps) {
 
   const [formTask, setFormTask] = useState<Partial<Task>>(initialTaskState);
 
+  const [activeTab, setActiveTab] = useState<'strategy' | 'execution' | 'performance'>('strategy');
+
   useEffect(() => {
     loadTasks();
 
@@ -92,6 +94,7 @@ export default function TaskBoard({ user, staff }: TaskBoardProps) {
     if (suggestion) {
       setFormTask({
         ...formTask,
+        tasksForToday: suggestion.tasksForToday || '',
         problem: suggestion.problem,
         smart: { ...suggestion.smart, timeBound: 'Today EOD' }
       });
@@ -271,6 +274,7 @@ export default function TaskBoard({ user, staff }: TaskBoardProps) {
                   <th className="p-4 w-12 sticky left-0 bg-zinc-950 z-20"></th>
                   <th className="p-4 w-32 text-center border-r border-zinc-800 bg-zinc-950 sticky left-12 z-20">SN / Days</th>
                   <th className="p-4 w-64 text-left border-r border-zinc-800">Job Description / Role</th>
+                  <th className="p-4 w-64 text-left border-r border-zinc-800 bg-amber-500/5">TASK (Strategic Objective)</th>
                   <th className="p-4 w-64 text-left border-r border-zinc-800">Problem Identification</th>
                   <th className="p-4 w-64 text-left border-r border-zinc-800">Root Cause & / or Consequence</th>
                   <th className="p-4 w-64 text-left border-r border-zinc-800">Risk</th>
@@ -307,6 +311,7 @@ export default function TaskBoard({ user, staff }: TaskBoardProps) {
                          <div className="text-[10px] text-zinc-500 mt-1 font-bold">{task.dateLogged || 'N/A'}</div>
                       </td>
                       <td className="p-4 border-r border-zinc-800 font-black text-white whitespace-pre-wrap text-sm leading-tight bg-zinc-900/30">{task.role}</td>
+                      <td className="p-4 border-r border-zinc-800 font-bold text-amber-500 bg-amber-500/5 whitespace-pre-wrap">{task.tasksForToday}</td>
                       <td className="p-4 border-r border-zinc-800 whitespace-pre-wrap line-clamp-2">{task.problem.description}</td>
                       <td className="p-4 border-r border-zinc-800 whitespace-pre-wrap line-clamp-2">{task.problem.rootCauseAndConsequences}</td>
                       <td className="p-4 border-r border-zinc-800 text-rose-400 whitespace-pre-wrap line-clamp-2">{task.problem.risk}</td>
@@ -334,10 +339,10 @@ export default function TaskBoard({ user, staff }: TaskBoardProps) {
                     </tr>
                     {expandedTaskId === task.id && (
                       <tr>
-                        <td colSpan={18} className="bg-zinc-950/50 p-0 border-b border-zinc-800">
-                           <div className="p-8 md:p-12 animate-in slide-in-from-top-4 duration-500">
+                        <td colSpan={19} className="bg-zinc-950/50 p-0 border-b border-zinc-800">
+                           <div className="p-8 md:p-12 animate-in slide-in-from-top-4 duration-500 space-y-12">
                               {/* Expanded Status & Action Banner */}
-                              <div className="bg-zinc-900 border border-zinc-800 rounded-[2.5rem] p-8 mb-10 flex flex-col md:flex-row items-center justify-between gap-8 shadow-2xl">
+                              <div className="bg-zinc-900 border border-zinc-800 rounded-[2.5rem] p-8 flex flex-col md:flex-row items-center justify-between gap-8 shadow-2xl">
                                  <div className="flex items-center gap-6">
                                     <div className={`w-16 h-16 rounded-3xl flex items-center justify-center ${task.skrc.status === 'Completed' ? 'bg-emerald-500/10 text-emerald-500' : 'bg-amber-500/10 text-amber-500'}`}>
                                        <Activity size={28} />
@@ -382,36 +387,61 @@ export default function TaskBoard({ user, staff }: TaskBoardProps) {
                                  </div>
                               </div>
 
-                              {/* PRRR Grid */}
-                              <div className="mb-10">
-                                 <h4 className="text-xs font-black text-rose-500 uppercase tracking-[0.3em] mb-6 flex items-center gap-2"><ShieldAlert size={14}/> PRRR Analysis Protocol</h4>
-                                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                                    {renderLargeTextBox("Problem Identification", task.problem.description, "rose", <AlertCircle size={14}/>)}
-                                    {renderLargeTextBox("Root Cause & Consequence", task.problem.rootCauseAndConsequences, "amber", <Activity size={14}/>)}
-                                    {renderLargeTextBox("Risk Exposure", task.problem.risk, "rose", <AlertTriangle size={14}/>)}
-                                 </div>
-                              </div>
+                              <div className="grid grid-cols-1 lg:grid-cols-12 gap-12">
+                                 {/* Left Column: Task & PRRR */}
+                                 <div className="lg:col-span-8 space-y-12">
+                                    {/* TASK SECTION */}
+                                    <div className="space-y-6">
+                                       <h4 className="text-xs font-black text-amber-500 uppercase tracking-[0.3em] flex items-center gap-2"><Zap size={14}/> Strategic Task Objective</h4>
+                                       <div className="bg-amber-500/5 border border-amber-500/20 p-8 rounded-[2rem] text-lg font-bold text-white leading-relaxed">
+                                          {task.tasksForToday || "No task objective defined."}
+                                       </div>
+                                    </div>
 
-                              {/* SMART Grid */}
-                              <div className="mb-10">
-                                 <h4 className="text-xs font-black text-blue-500 uppercase tracking-[0.3em] mb-6 flex items-center gap-2"><Target size={14}/> SMART Execution Framework</h4>
-                                 <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
-                                    {renderLargeTextBox("Specific", task.smart.specific, "blue")}
-                                    {renderLargeTextBox("Measurable", task.smart.measurable, "emerald")}
-                                    {renderLargeTextBox("Attainable", task.smart.attainable, "blue")}
-                                    {renderLargeTextBox("Relevance", task.smart.relevance, "amber")}
-                                    {renderLargeTextBox("Time Bound", task.smart.timeBound, "rose", <Clock size={14}/>)}
-                                 </div>
-                              </div>
+                                    {/* PRRR Grid */}
+                                    <div className="space-y-6">
+                                       <h4 className="text-xs font-black text-rose-500 uppercase tracking-[0.3em] flex items-center gap-2"><ShieldAlert size={14}/> PRRR Analysis Protocol</h4>
+                                       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                                          {renderLargeTextBox("Problem Identification", task.problem.description, "rose", <AlertCircle size={14}/>)}
+                                          {renderLargeTextBox("Root Cause & Consequence", task.problem.rootCauseAndConsequences, "amber", <Activity size={14}/>)}
+                                          {renderLargeTextBox("Risk Exposure", task.problem.risk, "rose", <AlertTriangle size={14}/>)}
+                                       </div>
+                                    </div>
 
-                              {/* SKRC & Feedback Grid */}
-                              <div>
-                                 <h4 className="text-xs font-black text-emerald-500 uppercase tracking-[0.3em] mb-6 flex items-center gap-2"><BarChart size={14}/> SKRC Feedback Loop</h4>
-                                 <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-                                    {renderLargeTextBox("Key Result", task.skrc.keyResult, "emerald", <CheckSquare size={14}/>)}
-                                    {renderLargeTextBox("Reflections", task.skrc.reflection, "blue", <Eye size={14}/>)}
-                                    {renderLargeTextBox("Challenges", task.skrc.challenges, "rose", <ShieldAlert size={14}/>)}
-                                    {renderLargeTextBox("SUP / Line Remarks", task.lineRemarks, "amber", <MessageSquare size={14}/>)}
+                                    {/* SMART Grid */}
+                                    <div className="space-y-6">
+                                       <h4 className="text-xs font-black text-blue-500 uppercase tracking-[0.3em] flex items-center gap-2"><Target size={14}/> SMART Execution Framework</h4>
+                                       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                          {renderLargeTextBox("Specific", task.smart.specific, "blue")}
+                                          {renderLargeTextBox("Measurable", task.smart.measurable, "emerald")}
+                                          {renderLargeTextBox("Attainable", task.smart.attainable, "blue")}
+                                          {renderLargeTextBox("Relevance", task.smart.relevance, "amber")}
+                                          {renderLargeTextBox("Time Bound", task.smart.timeBound, "rose", <Clock size={14}/>)}
+                                       </div>
+                                    </div>
+                                 </div>
+
+                                 {/* Right Column: SKRC & Report (Separated) */}
+                                 <div className="lg:col-span-4 space-y-12">
+                                    <div className="bg-zinc-900/80 border border-zinc-800 rounded-[3rem] p-8 h-full flex flex-col shadow-2xl">
+                                       <h4 className="text-xs font-black text-emerald-500 uppercase tracking-[0.3em] mb-8 flex items-center gap-2"><BarChart size={14}/> SKRC Performance Report</h4>
+                                       
+                                       <div className="space-y-8 flex-1">
+                                          <div className="space-y-4">
+                                             <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">Execution Report</label>
+                                             <div className="bg-zinc-950 p-6 rounded-2xl text-sm text-zinc-300 leading-relaxed border border-zinc-800 shadow-inner min-h-[150px]">
+                                                {task.skrc.report || <span className="text-zinc-700 italic">No report submitted yet.</span>}
+                                             </div>
+                                          </div>
+
+                                          <div className="grid grid-cols-1 gap-6">
+                                             {renderLargeTextBox("Key Result", task.skrc.keyResult, "emerald", <CheckSquare size={14}/>)}
+                                             {renderLargeTextBox("Reflections", task.skrc.reflection, "blue", <Eye size={14}/>)}
+                                             {renderLargeTextBox("Challenges", task.skrc.challenges, "rose", <ShieldAlert size={14}/>)}
+                                             {renderLargeTextBox("SUP / Line Remarks", task.lineRemarks, "amber", <MessageSquare size={14}/>)}
+                                          </div>
+                                       </div>
+                                    </div>
                                  </div>
                               </div>
                            </div>
@@ -445,106 +475,154 @@ export default function TaskBoard({ user, staff }: TaskBoardProps) {
                <button onClick={() => setIsModalOpen(false)} className="p-3 bg-zinc-900 border border-zinc-800 rounded-2xl text-zinc-500 hover:text-white transition-all"><X size={24} /></button>
              </div>
 
+             {/* Tab Navigation */}
+             <div className="flex gap-2 p-1.5 bg-zinc-900 rounded-2xl mb-10 border border-zinc-800">
+                {[
+                  { id: 'strategy', label: '1. Strategy & Problem', icon: <ShieldAlert size={16}/> },
+                  { id: 'execution', label: '2. SMART Execution', icon: <Target size={16}/> },
+                  { id: 'performance', label: '3. SKRC Performance', icon: <BarChart size={16}/> }
+                ].map((tab) => (
+                  <button
+                    key={tab.id}
+                    onClick={() => setActiveTab(tab.id as any)}
+                    className={`flex-1 flex items-center justify-center gap-2 py-4 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === tab.id ? 'bg-amber-500 text-black shadow-lg' : 'text-zinc-500 hover:text-white hover:bg-zinc-800'}`}
+                  >
+                    {tab.icon} {tab.label}
+                  </button>
+                ))}
+             </div>
+
              <div className="space-y-10">
-                {/* Identity Section */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                   <div className="space-y-2">
-                      <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest ml-1">Job Description / Role</label>
-                      <div className="flex gap-2">
-                        <textarea rows={4} className="flex-1 bg-zinc-900 border border-zinc-800 p-5 rounded-2xl text-sm font-bold text-white focus:border-amber-500 outline-none resize-none shadow-inner leading-relaxed" value={formTask.role} onChange={e => setFormTask({...formTask, role: e.target.value})} placeholder="e.g. Head of ICT Duties: Oversee, manage and ensure full functionality of all ICT systems..." />
-                        <button onClick={handleAiGenerate} className="p-4 bg-zinc-900 border border-zinc-800 rounded-2xl text-amber-500 hover:text-white hover:bg-amber-500/10 transition-all" title="AI Auto-Fill"><Wand2 size={24} /></button>
-                      </div>
-                   </div>
-                   <div className="space-y-2">
-                      <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest ml-1">Responsible Party</label>
-                      <select className="w-full bg-zinc-900 border border-zinc-800 p-4 rounded-xl text-xs font-bold text-white focus:border-amber-500 outline-none" value={formTask.responsibleParty} onChange={e => handleStaffSelect(e.target.value)}>
-                         <option value="">Select Staff...</option>
-                         {staff.map(s => <option key={s.id} value={s.id}>{s.name} ({s.role})</option>)}
-                      </select>
-                   </div>
-                   <div className="space-y-2">
-                      <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest ml-1">Time Bound (Deadline)</label>
-                      <input type="text" className="w-full bg-zinc-900 border border-zinc-800 p-4 rounded-xl text-xs text-white focus:border-amber-500 outline-none" value={formTask.smart?.timeBound} onChange={e => setFormTask({...formTask, smart: {...formTask.smart!, timeBound: e.target.value}})} placeholder='e.g. "Today EOD", "By Friday 3pm"' />
-                   </div>
-                </div>
+                {activeTab === 'strategy' && (
+                  <div className="space-y-10 animate-in fade-in slide-in-from-bottom-2 duration-500">
+                    {/* Identity Section */}
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                       <div className="space-y-2">
+                          <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest ml-1">Job Description / Role</label>
+                          <div className="flex gap-2">
+                            <textarea rows={4} className="flex-1 bg-zinc-900 border border-zinc-800 p-5 rounded-2xl text-sm font-bold text-white focus:border-amber-500 outline-none resize-none shadow-inner leading-relaxed" value={formTask.role} onChange={e => setFormTask({...formTask, role: e.target.value})} placeholder="e.g. Head of ICT Duties: Oversee, manage and ensure full functionality of all ICT systems..." />
+                            <button onClick={handleAiGenerate} className="p-4 bg-zinc-900 border border-zinc-800 rounded-2xl text-amber-500 hover:text-white hover:bg-amber-500/10 transition-all" title="AI Auto-Fill"><Wand2 size={24} /></button>
+                          </div>
+                       </div>
+                       <div className="space-y-2">
+                          <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest ml-1">Responsible Party</label>
+                          <select className="w-full bg-zinc-900 border border-zinc-800 p-4 rounded-xl text-xs font-bold text-white focus:border-amber-500 outline-none" value={formTask.responsibleParty} onChange={e => handleStaffSelect(e.target.value)}>
+                             <option value="">Select Staff...</option>
+                             {staff.map(s => <option key={s.id} value={s.id}>{s.name} ({s.role})</option>)}
+                          </select>
+                       </div>
+                       <div className="space-y-2">
+                          <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest ml-1">Time Bound (Deadline)</label>
+                          <input type="text" className="w-full bg-zinc-900 border border-zinc-800 p-4 rounded-xl text-xs text-white focus:border-amber-500 outline-none" value={formTask.smart?.timeBound} onChange={e => setFormTask({...formTask, smart: {...formTask.smart!, timeBound: e.target.value}})} placeholder='e.g. "Today EOD", "By Friday 3pm"' />
+                       </div>
+                    </div>
 
-                {/* PRRR Section */}
-                <div className="space-y-6 border-t border-zinc-800 pt-6">
-                   <h3 className="text-sm font-black text-rose-500 uppercase tracking-widest flex items-center gap-2"><ShieldAlert size={16} /> PRRR Analysis</h3>
-                   <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                      <div className="space-y-2">
-                         <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">Problem Identification</label>
-                         <textarea rows={4} className="w-full bg-zinc-900/50 border border-zinc-800 p-4 rounded-xl text-xs text-zinc-300 focus:border-rose-500 outline-none resize-none" value={formTask.problem?.description} onChange={e => setFormTask({...formTask, problem: {...formTask.problem!, description: e.target.value}})} placeholder="What is wrong? Be factual." />
-                      </div>
-                      <div className="space-y-2">
-                         <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">Root Cause & Consequence</label>
-                         <textarea rows={4} className="w-full bg-zinc-900/50 border border-zinc-800 p-4 rounded-xl text-xs text-zinc-300 focus:border-rose-500 outline-none resize-none" value={formTask.problem?.rootCauseAndConsequences} onChange={e => setFormTask({...formTask, problem: {...formTask.problem!, rootCauseAndConsequences: e.target.value}})} placeholder="Why it happened & Impact." />
-                      </div>
-                      <div className="space-y-2">
-                         <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">Risk</label>
-                         <textarea rows={4} className="w-full bg-zinc-900/50 border border-zinc-800 p-4 rounded-xl text-xs text-zinc-300 focus:border-rose-500 outline-none resize-none" value={formTask.problem?.risk} onChange={e => setFormTask({...formTask, problem: {...formTask.problem!, risk: e.target.value}})} placeholder="Potential damage/loss." />
-                      </div>
-                   </div>
-                </div>
+                    {/* TASK Section */}
+                    <div className="space-y-6 border-t border-zinc-800 pt-6">
+                       <h3 className="text-sm font-black text-amber-500 uppercase tracking-widest flex items-center gap-2"><Zap size={16} /> Strategic Task Objective</h3>
+                       <div className="space-y-2">
+                          <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">Define the Task (Before Problem Identification)</label>
+                          <textarea rows={3} className="w-full bg-amber-500/5 border border-zinc-800 p-6 rounded-2xl text-sm font-bold text-white focus:border-amber-500 outline-none resize-none shadow-inner" value={formTask.tasksForToday} onChange={e => setFormTask({...formTask, tasksForToday: e.target.value})} placeholder="What is the primary task or objective to be achieved today?" />
+                       </div>
+                    </div>
 
-                {/* SMART Section */}
-                <div className="space-y-6 border-t border-zinc-800 pt-6">
-                   <h3 className="text-sm font-black text-blue-500 uppercase tracking-widest flex items-center gap-2"><Target size={16} /> SMART Execution</h3>
-                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      <div className="space-y-2">
-                         <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">Specific (Concrete Action Steps)</label>
-                         <textarea rows={3} className="w-full bg-zinc-900/50 border border-zinc-800 p-4 rounded-xl text-xs text-zinc-300 focus:border-blue-500 outline-none resize-none" value={formTask.smart?.specific} onChange={e => setFormTask({...formTask, smart: {...formTask.smart!, specific: e.target.value}})} placeholder="Exactly what you will do." />
-                      </div>
-                      <div className="space-y-2">
-                         <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">Measurable (Success Indicator)</label>
-                         <textarea rows={3} className="w-full bg-zinc-900/50 border border-zinc-800 p-4 rounded-xl text-xs text-zinc-300 focus:border-blue-500 outline-none resize-none" value={formTask.smart?.measurable} onChange={e => setFormTask({...formTask, smart: {...formTask.smart!, measurable: e.target.value}})} placeholder="How will you know it's done?" />
-                      </div>
-                      <div className="space-y-2">
-                         <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">Attainable (Feasibility)</label>
-                         <textarea rows={2} className="w-full bg-zinc-900/50 border border-zinc-800 p-4 rounded-xl text-xs text-zinc-300 focus:border-blue-500 outline-none resize-none" value={formTask.smart?.attainable} onChange={e => setFormTask({...formTask, smart: {...formTask.smart!, attainable: e.target.value}})} placeholder="Is it achievable with current resources?" />
-                      </div>
-                      <div className="space-y-2">
-                         <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">Relevance (Business Value)</label>
-                         <textarea rows={2} className="w-full bg-zinc-900/50 border border-zinc-800 p-4 rounded-xl text-xs text-zinc-300 focus:border-blue-500 outline-none resize-none" value={formTask.smart?.relevance} onChange={e => setFormTask({...formTask, smart: {...formTask.smart!, relevance: e.target.value}})} placeholder="Why does this matter?" />
-                      </div>
-                   </div>
-                </div>
+                    {/* PRRR Section */}
+                    <div className="space-y-6 border-t border-zinc-800 pt-6">
+                       <h3 className="text-sm font-black text-rose-500 uppercase tracking-widest flex items-center gap-2"><ShieldAlert size={16} /> PRRR Analysis</h3>
+                       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                          <div className="space-y-2">
+                             <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">Problem Identification</label>
+                             <textarea rows={4} className="w-full bg-zinc-900/50 border border-zinc-800 p-4 rounded-xl text-xs text-zinc-300 focus:border-rose-500 outline-none resize-none" value={formTask.problem?.description} onChange={e => setFormTask({...formTask, problem: {...formTask.problem!, description: e.target.value}})} placeholder="What is wrong? Be factual." />
+                          </div>
+                          <div className="space-y-2">
+                             <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">Root Cause & Consequence</label>
+                             <textarea rows={4} className="w-full bg-zinc-900/50 border border-zinc-800 p-4 rounded-xl text-xs text-zinc-300 focus:border-rose-500 outline-none resize-none" value={formTask.problem?.rootCauseAndConsequences} onChange={e => setFormTask({...formTask, problem: {...formTask.problem!, rootCauseAndConsequences: e.target.value}})} placeholder="Why it happened & Impact." />
+                          </div>
+                          <div className="space-y-2">
+                             <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">Risk</label>
+                             <textarea rows={4} className="w-full bg-zinc-900/50 border border-zinc-800 p-4 rounded-xl text-xs text-zinc-300 focus:border-rose-500 outline-none resize-none" value={formTask.problem?.risk} onChange={e => setFormTask({...formTask, problem: {...formTask.problem!, risk: e.target.value}})} placeholder="Potential damage/loss." />
+                          </div>
+                       </div>
+                    </div>
+                    <div className="flex justify-end">
+                       <button onClick={() => setActiveTab('execution')} className="px-8 py-4 bg-zinc-800 text-white font-black rounded-2xl uppercase tracking-widest text-xs flex items-center gap-2">Next: SMART Execution <ArrowRight size={16}/></button>
+                    </div>
+                  </div>
+                )}
 
-                {/* SKRC & Feedback Section */}
-                <div className="space-y-6 border-t border-zinc-800 pt-6">
-                   <h3 className="text-sm font-black text-emerald-500 uppercase tracking-widest flex items-center gap-2"><BarChart size={16} /> SKRC & Feedback</h3>
-                   <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-                      <div className="space-y-2">
-                         <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">Status</label>
-                         <select className="w-full bg-zinc-900/50 border border-zinc-800 p-4 rounded-xl text-xs font-bold text-white focus:border-emerald-500 outline-none" value={formTask.skrc?.status} onChange={e => setFormTask({...formTask, skrc: {...formTask.skrc!, status: e.target.value as TaskStatus}})}>
-                            <option value="Pending">Pending</option>
-                            <option value="Ongoing">Ongoing</option>
-                            <option value="Awaiting Approval">Awaiting Approval</option>
-                            <option value="Completed">Completed</option>
-                            <option value="Delayed">Delayed</option>
-                         </select>
-                      </div>
-                      <div className="space-y-2 md:col-span-3">
-                         <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">Key Result (Outcome)</label>
-                         <textarea rows={2} className="w-full bg-zinc-900/50 border border-zinc-800 p-4 rounded-xl text-xs text-zinc-300 focus:border-emerald-500 outline-none resize-none" value={formTask.skrc?.keyResult} onChange={e => setFormTask({...formTask, skrc: {...formTask.skrc!, keyResult: e.target.value}})} placeholder="Final deliverable or impact achieved." />
-                      </div>
-                      <div className="space-y-2 md:col-span-2">
-                         <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">Reflections (Learnings)</label>
-                         <textarea rows={3} className="w-full bg-zinc-900/50 border border-zinc-800 p-4 rounded-xl text-xs text-zinc-300 focus:border-emerald-500 outline-none resize-none" value={formTask.skrc?.reflection} onChange={e => setFormTask({...formTask, skrc: {...formTask.skrc!, reflection: e.target.value}})} placeholder="What was learned or process insights." />
-                      </div>
-                      <div className="space-y-2 md:col-span-2">
-                         <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">Challenges (Blockers)</label>
-                         <textarea rows={3} className="w-full bg-zinc-900/50 border border-zinc-800 p-4 rounded-xl text-xs text-zinc-300 focus:border-emerald-500 outline-none resize-none" value={formTask.skrc?.challenges} onChange={e => setFormTask({...formTask, skrc: {...formTask.skrc!, challenges: e.target.value}})} placeholder="Difficulties faced during execution." />
-                      </div>
-                   </div>
-                   
-                   {isManagement && (
-                     <div className="space-y-2 pt-4 border-t border-zinc-800/50">
-                        <label className="text-[10px] font-bold text-amber-500 uppercase tracking-widest">SUP / Line Remarks (Supervisor Only)</label>
-                        <textarea rows={2} className="w-full bg-zinc-900/50 border border-zinc-800 p-4 rounded-xl text-xs text-white focus:border-amber-500 outline-none resize-none font-bold" value={formTask.lineRemarks} onChange={e => setFormTask({...formTask, lineRemarks: e.target.value})} placeholder="Feedback, approval, or directives." />
-                     </div>
-                   )}
-                </div>
+                {activeTab === 'execution' && (
+                  <div className="space-y-10 animate-in fade-in slide-in-from-bottom-2 duration-500">
+                    {/* SMART Section */}
+                    <div className="space-y-6">
+                       <h3 className="text-sm font-black text-blue-500 uppercase tracking-widest flex items-center gap-2"><Target size={16} /> SMART Execution</h3>
+                       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                          <div className="space-y-2">
+                             <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">Specific (Concrete Action Steps)</label>
+                             <textarea rows={3} className="w-full bg-zinc-900/50 border border-zinc-800 p-4 rounded-xl text-xs text-zinc-300 focus:border-blue-500 outline-none resize-none" value={formTask.smart?.specific} onChange={e => setFormTask({...formTask, smart: {...formTask.smart!, specific: e.target.value}})} placeholder="Exactly what you will do." />
+                          </div>
+                          <div className="space-y-2">
+                             <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">Measurable (Success Indicator)</label>
+                             <textarea rows={3} className="w-full bg-zinc-900/50 border border-zinc-800 p-4 rounded-xl text-xs text-zinc-300 focus:border-blue-500 outline-none resize-none" value={formTask.smart?.measurable} onChange={e => setFormTask({...formTask, smart: {...formTask.smart!, measurable: e.target.value}})} placeholder="How will you know it's done?" />
+                          </div>
+                          <div className="space-y-2">
+                             <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">Attainable (Feasibility)</label>
+                             <textarea rows={2} className="w-full bg-zinc-900/50 border border-zinc-800 p-4 rounded-xl text-xs text-zinc-300 focus:border-blue-500 outline-none resize-none" value={formTask.smart?.attainable} onChange={e => setFormTask({...formTask, smart: {...formTask.smart!, attainable: e.target.value}})} placeholder="Is it achievable with current resources?" />
+                          </div>
+                          <div className="space-y-2">
+                             <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">Relevance (Business Value)</label>
+                             <textarea rows={2} className="w-full bg-zinc-900/50 border border-zinc-800 p-4 rounded-xl text-xs text-zinc-300 focus:border-blue-500 outline-none resize-none" value={formTask.smart?.relevance} onChange={e => setFormTask({...formTask, smart: {...formTask.smart!, relevance: e.target.value}})} placeholder="Why does this matter?" />
+                          </div>
+                       </div>
+                    </div>
+                    <div className="flex justify-between">
+                       <button onClick={() => setActiveTab('strategy')} className="px-8 py-4 bg-zinc-900 text-zinc-500 font-black rounded-2xl uppercase tracking-widest text-xs">Back</button>
+                       <button onClick={() => setActiveTab('performance')} className="px-8 py-4 bg-zinc-800 text-white font-black rounded-2xl uppercase tracking-widest text-xs flex items-center gap-2">Next: SKRC Performance <ArrowRight size={16}/></button>
+                    </div>
+                  </div>
+                )}
+
+                {activeTab === 'performance' && (
+                  <div className="space-y-10 animate-in fade-in slide-in-from-bottom-2 duration-500">
+                    {/* SKRC & Feedback Section */}
+                    <div className="space-y-6">
+                       <h3 className="text-sm font-black text-emerald-500 uppercase tracking-widest flex items-center gap-2"><BarChart size={16} /> SKRC & Feedback</h3>
+                       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+                          <div className="space-y-2">
+                             <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">Status</label>
+                             <select className="w-full bg-zinc-900/50 border border-zinc-800 p-4 rounded-xl text-xs font-bold text-white focus:border-emerald-500 outline-none" value={formTask.skrc?.status} onChange={e => setFormTask({...formTask, skrc: {...formTask.skrc!, status: e.target.value as TaskStatus}})}>
+                                <option value="Pending">Pending</option>
+                                <option value="Ongoing">Ongoing</option>
+                                <option value="Awaiting Approval">Awaiting Approval</option>
+                                <option value="Completed">Completed</option>
+                                <option value="Delayed">Delayed</option>
+                             </select>
+                          </div>
+                          <div className="space-y-2 md:col-span-3">
+                             <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">Key Result (Outcome)</label>
+                             <textarea rows={2} className="w-full bg-zinc-900/50 border border-zinc-800 p-4 rounded-xl text-xs text-zinc-300 focus:border-emerald-500 outline-none resize-none" value={formTask.skrc?.keyResult} onChange={e => setFormTask({...formTask, skrc: {...formTask.skrc!, keyResult: e.target.value}})} placeholder="Final deliverable or impact achieved." />
+                          </div>
+                          <div className="space-y-2 md:col-span-2">
+                             <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">Reflections (Learnings)</label>
+                             <textarea rows={3} className="w-full bg-zinc-900/50 border border-zinc-800 p-4 rounded-xl text-xs text-zinc-300 focus:border-emerald-500 outline-none resize-none" value={formTask.skrc?.reflection} onChange={e => setFormTask({...formTask, skrc: {...formTask.skrc!, reflection: e.target.value}})} placeholder="What was learned or process insights." />
+                          </div>
+                          <div className="space-y-2 md:col-span-2">
+                             <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">Challenges (Blockers)</label>
+                             <textarea rows={3} className="w-full bg-zinc-900/50 border border-zinc-800 p-4 rounded-xl text-xs text-zinc-300 focus:border-emerald-500 outline-none resize-none" value={formTask.skrc?.challenges} onChange={e => setFormTask({...formTask, skrc: {...formTask.skrc!, challenges: e.target.value}})} placeholder="Difficulties faced during execution." />
+                          </div>
+                       </div>
+                       
+                       {isManagement && (
+                         <div className="space-y-2 pt-4 border-t border-zinc-800/50">
+                            <label className="text-[10px] font-bold text-amber-500 uppercase tracking-widest">SUP / Line Remarks (Supervisor Only)</label>
+                            <textarea rows={2} className="w-full bg-zinc-900/50 border border-zinc-800 p-4 rounded-xl text-xs text-white focus:border-amber-500 outline-none resize-none font-bold" value={formTask.lineRemarks} onChange={e => setFormTask({...formTask, lineRemarks: e.target.value})} placeholder="Feedback, approval, or directives." />
+                         </div>
+                       )}
+                    </div>
+                    <div className="flex justify-start">
+                       <button onClick={() => setActiveTab('execution')} className="px-8 py-4 bg-zinc-900 text-zinc-500 font-black rounded-2xl uppercase tracking-widest text-xs">Back</button>
+                    </div>
+                  </div>
+                )}
 
                 <div className="flex gap-4 pt-4 border-t border-zinc-800">
                    <button onClick={handleSaveTask} className="flex-1 py-4 gold-gradient text-black font-black rounded-2xl uppercase tracking-widest text-xs hover:shadow-xl transition-all">
