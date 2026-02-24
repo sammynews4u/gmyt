@@ -111,7 +111,7 @@ const App: React.FC = () => {
     { id: 'chat', label: 'Strategic Comms', icon: <MessageSquare size={20} />, roles: ['CEO', 'Project Manager', 'Staff', 'Accountant'] },
     { id: 'staff-management', label: 'Staff Management', icon: <Contact size={20} />, roles: ['CEO'] },
     { id: 'hiring', label: 'Recruitment', icon: <UserPlus size={20} />, roles: ['CEO', 'Project Manager'] },
-    { id: 'tasks', label: 'SMART Task Sheet', icon: <ClipboardList size={20} />, roles: ['CEO', 'Project Manager', 'Staff'] },
+    { id: 'tasks', label: 'SMART Task Sheet', icon: <ClipboardList size={20} />, roles: ['CEO', 'Project Manager', 'Staff', 'Accountant'] },
     { id: 'onboarding', label: 'Staff Onboarding Docs', icon: <FolderLock size={20} />, roles: ['CEO', 'Project Manager'] },
     { id: 'inventory', label: 'Store Inventory', icon: <Package size={20} />, roles: ['CEO', 'Accountant'] },
     { id: 'expenses', label: 'Financial Sheet', icon: <Banknote size={20} />, roles: ['CEO', 'Accountant'] },
