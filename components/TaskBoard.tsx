@@ -88,15 +88,16 @@ export default function TaskBoard({ user, staff }: TaskBoardProps) {
   };
 
   const handleAiGenerate = async () => {
-    if (!formTask.role) return alert("Please specify the Core Objective (Job Description) first.");
+    const input = formTask.tasksForToday || formTask.role;
+    if (!input) return alert("Please specify the Task Objective or Job Description first.");
     setIsAiGenerating(true);
-    const suggestion = await generateTaskSchema(formTask.role, "Optimal performance goals.");
+    const suggestion = await generateTaskSchema(formTask.role || "Staff Member", input);
     if (suggestion) {
       setFormTask({
         ...formTask,
-        tasksForToday: suggestion.tasksForToday || '',
+        tasksForToday: suggestion.tasksForToday || formTask.tasksForToday || '',
         problem: suggestion.problem,
-        smart: { ...suggestion.smart, timeBound: 'Today EOD' }
+        smart: { ...suggestion.smart, timeBound: suggestion.smart.timeBound || 'Today EOD' }
       });
     }
     setIsAiGenerating(false);
@@ -505,36 +506,63 @@ export default function TaskBoard({ user, staff }: TaskBoardProps) {
              <div className="space-y-10">
                 {activeTab === 'task' && (
                   <div className="space-y-10 animate-in fade-in slide-in-from-bottom-2 duration-500">
-                    {/* Identity Section */}
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                       <div className="space-y-2">
-                          <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest ml-1">Job Description / Role</label>
-                          <div className="flex gap-2">
-                            <textarea rows={4} className="flex-1 bg-zinc-900 border border-zinc-800 p-5 rounded-2xl text-sm font-bold text-white focus:border-amber-500 outline-none resize-none shadow-inner leading-relaxed" value={formTask.role} onChange={e => setFormTask({...formTask, role: e.target.value})} placeholder="e.g. Head of ICT Duties: Oversee, manage and ensure full functionality of all ICT systems..." />
-                            <button onClick={handleAiGenerate} className="p-4 bg-zinc-900 border border-zinc-800 rounded-2xl text-amber-500 hover:text-white hover:bg-amber-500/10 transition-all" title="AI Auto-Fill"><Wand2 size={24} /></button>
-                          </div>
+                    {/* TASK Section */}
+                    <div className="space-y-6">
+                       <div className="flex items-center justify-between">
+                          <h3 className="text-sm font-black text-amber-500 uppercase tracking-widest flex items-center gap-2"><Zap size={16} /> 1. Strategic Task Objective</h3>
+                          <button 
+                            onClick={handleAiGenerate} 
+                            disabled={isAiGenerating}
+                            className="px-6 py-2 bg-amber-500 text-black rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center gap-2 hover:shadow-lg transition-all disabled:opacity-50"
+                          >
+                            {isAiGenerating ? <Loader2 size={14} className="animate-spin" /> : <Wand2 size={14} />}
+                            AI Auto-Fill Sheet
+                          </button>
                        </div>
                        <div className="space-y-2">
-                          <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest ml-1">Responsible Party</label>
-                          <select className="w-full bg-zinc-900 border border-zinc-800 p-4 rounded-xl text-xs font-bold text-white focus:border-amber-500 outline-none" value={formTask.responsibleParty} onChange={e => handleStaffSelect(e.target.value)}>
-                             <option value="">Select Staff...</option>
-                             {staff.map(s => <option key={s.id} value={s.id}>{s.name} ({s.role})</option>)}
-                          </select>
-                       </div>
-                       <div className="space-y-2">
-                          <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest ml-1">Time Bound (Deadline)</label>
-                          <input type="text" className="w-full bg-zinc-900 border border-zinc-800 p-4 rounded-xl text-xs text-white focus:border-amber-500 outline-none" value={formTask.smart?.timeBound} onChange={e => setFormTask({...formTask, smart: {...formTask.smart!, timeBound: e.target.value}})} placeholder='e.g. "Today EOD", "By Friday 3pm"' />
+                          <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest ml-1">What is the primary task or objective to be achieved today?</label>
+                          <textarea rows={4} className="w-full bg-amber-500/5 border border-zinc-800 p-6 rounded-[2rem] text-lg font-bold text-white focus:border-amber-500 outline-none resize-none shadow-inner" value={formTask.tasksForToday} onChange={e => setFormTask({...formTask, tasksForToday: e.target.value})} placeholder="e.g. Audit all ICT systems for security vulnerabilities..." />
                        </div>
                     </div>
 
-                    {/* TASK Section */}
-                    <div className="space-y-6 border-t border-zinc-800 pt-6">
-                       <h3 className="text-sm font-black text-amber-500 uppercase tracking-widest flex items-center gap-2"><Zap size={16} /> Strategic Task Objective</h3>
-                       <div className="space-y-2">
-                          <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">Define the Task (Before Problem Identification)</label>
-                          <textarea rows={6} className="w-full bg-amber-500/5 border border-zinc-800 p-8 rounded-[2.5rem] text-lg font-bold text-white focus:border-amber-500 outline-none resize-none shadow-inner" value={formTask.tasksForToday} onChange={e => setFormTask({...formTask, tasksForToday: e.target.value})} placeholder="What is the primary task or objective to be achieved today?" />
+                    {/* Identity Section */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8 border-t border-zinc-800 pt-10">
+                       <div className="space-y-4">
+                          <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest ml-1 flex items-center gap-2">
+                             <User size={14} /> Assign Responsible Party
+                          </label>
+                          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 max-h-64 overflow-y-auto p-4 bg-zinc-900/50 rounded-[2rem] border border-zinc-800 no-scrollbar">
+                             {staff.map(s => (
+                               <button
+                                 key={s.id}
+                                 onClick={() => handleStaffSelect(s.id)}
+                                 className={`p-4 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all border text-left flex flex-col justify-between h-24 ${formTask.responsibleParty === s.name ? 'bg-amber-500 text-black border-amber-500 shadow-xl scale-[1.02]' : 'bg-zinc-800 text-zinc-400 border-zinc-700 hover:border-zinc-500'}`}
+                               >
+                                 <span className="truncate w-full">{s.name}</span>
+                                 <span className={`text-[8px] mt-1 line-clamp-2 ${formTask.responsibleParty === s.name ? 'text-black/60' : 'text-zinc-500'}`}>{s.role}</span>
+                               </button>
+                             ))}
+                          </div>
+                          {formTask.responsibleParty && (
+                            <div className="px-4 py-2 bg-amber-500/10 border border-amber-500/20 rounded-xl flex items-center gap-2">
+                               <Check size={14} className="text-amber-500" />
+                               <span className="text-[10px] font-black text-amber-500 uppercase tracking-widest">Selected: {formTask.responsibleParty}</span>
+                            </div>
+                          )}
+                       </div>
+
+                       <div className="space-y-6">
+                          <div className="space-y-2">
+                             <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest ml-1">Job Description / Role Context</label>
+                             <textarea rows={4} className="w-full bg-zinc-900 border border-zinc-800 p-5 rounded-2xl text-sm font-bold text-white focus:border-amber-500 outline-none resize-none shadow-inner leading-relaxed" value={formTask.role} onChange={e => setFormTask({...formTask, role: e.target.value})} placeholder="e.g. Head of ICT Duties: Oversee, manage and ensure full functionality..." />
+                          </div>
+                          <div className="space-y-2">
+                             <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest ml-1">Time Bound (Deadline)</label>
+                             <input type="text" className="w-full bg-zinc-900 border border-zinc-800 p-4 rounded-xl text-xs text-white focus:border-amber-500 outline-none" value={formTask.smart?.timeBound} onChange={e => setFormTask({...formTask, smart: {...formTask.smart!, timeBound: e.target.value}})} placeholder='e.g. "Today EOD", "By Friday 3pm"' />
+                          </div>
                        </div>
                     </div>
+
                     <div className="flex justify-end">
                        <button onClick={() => setActiveTab('prrr')} className="px-8 py-4 bg-zinc-800 text-white font-black rounded-2xl uppercase tracking-widest text-xs flex items-center gap-2">Next: PRRR Analysis <ArrowRight size={16}/></button>
                     </div>

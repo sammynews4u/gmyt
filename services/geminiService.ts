@@ -51,7 +51,14 @@ export const generateTaskSchema = async (role: string, objective: string) => {
     const ai = getAI();
     const response = await ai.models.generateContent({
       model: 'gemini-3-pro-preview',
-      contents: `Generate a high-level corporate task for a ${role} with the following core objective: "${objective}". Use the GMYT PRRR-SMART-SKRC framework.`,
+      contents: `Generate a comprehensive corporate task plan for a ${role} based on this specific objective: "${objective}". 
+      If the objective is a broad role description, generate a specific daily task. 
+      If the objective is already a specific task, expand it into the full PRRR-SMART-SKRC framework.
+      
+      Framework Guidelines:
+      - PRRR: Problem, Root Cause, Risk.
+      - SMART: Specific, Measurable, Attainable, Relevance, Time-Bound.
+      - SKRC: Status, Key Result, Reflection, Challenges.`,
       config: {
         responseMimeType: "application/json",
         responseSchema: {
