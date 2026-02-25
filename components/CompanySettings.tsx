@@ -1,10 +1,9 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { 
-  Settings, Image as ImageIcon, Globe, MapPin, Phone, Mail, Save, 
   UserPlus, Trash2, ShieldCheck, Loader2, Key, Download, Upload, 
-  Database, Settings2, Code, ChevronRight, Check, X, ShieldAlert, 
-  History, Cloud, CloudOff, RefreshCw, Zap, Briefcase, FileText, Send 
+  Database, Code, ChevronRight, 
+  Cloud, CloudOff, RefreshCw, Zap, Send 
 } from 'lucide-react';
 import { UserAccount, UserRole, PasswordChangeRequest } from '../types';
 import { storageService } from '../services/storageService';
@@ -30,7 +29,6 @@ interface SettingsProps {
 }
 
 const CompanySettings: React.FC<SettingsProps> = ({ role }) => {
-  const [currentUser, setCurrentUser] = useState<UserAccount | null>(null);
   const [users, setUsers] = useState<UserAccount[]>([]);
   const [pwRequests, setPwRequests] = useState<PasswordChangeRequest[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -44,30 +42,30 @@ const CompanySettings: React.FC<SettingsProps> = ({ role }) => {
   const [isSyncing, setIsSyncing] = useState(false);
   const [lastSync, setLastSync] = useState<string>('');
 
-  const loadSyncStatus = async () => {
+  const loadSyncStatus = useCallback(async () => {
     const key = await storageService.getSyncKey();
     if (key) setSyncKey(key);
     const status = await storageService.getDbStatus();
     setLastSync(status.lastSync);
-  };
+  }, []);
 
-  const inspectDatabase = async () => {
+  const inspectDatabase = useCallback(async () => {
     const dump = await storageService.exportDatabase();
     const parsed = JSON.parse(dump);
     setRawJson(JSON.stringify(parsed[inspectedStore] || [], null, 2));
-  };
+  }, [inspectedStore]);
 
-  const loadUsers = async () => {
+  const loadUsers = useCallback(async () => {
     const data = await storageService.getUsers();
     setUsers(data);
-  };
+  }, []);
 
-  const loadPwRequests = async () => {
+  const loadPwRequests = useCallback(async () => {
     const data = await storageService.getPasswordRequests();
     setPwRequests(data);
-  };
+  }, []);
 
-  const loadInitialData = async () => {
+  const loadInitialData = useCallback(async () => {
     setIsLoading(true);
     await Promise.all([
       loadUsers(),
@@ -76,7 +74,7 @@ const CompanySettings: React.FC<SettingsProps> = ({ role }) => {
     ]);
     await inspectDatabase();
     setIsLoading(false);
-  };
+  }, [loadUsers, loadPwRequests, loadSyncStatus, inspectDatabase]);
 
   const [newUser, setNewUser] = useState({
     name: '',
@@ -89,10 +87,11 @@ const CompanySettings: React.FC<SettingsProps> = ({ role }) => {
   });
 
   useEffect(() => {
-    const saved = localStorage.getItem('gmyt_session');
-    if (saved) setCurrentUser(JSON.parse(saved));
-    loadInitialData();
-  }, []);
+    const init = async () => {
+      await loadInitialData();
+    };
+    init();
+  }, [loadInitialData]);
 
   const handleCreateUser = async () => {
     if (!newUser.name || !newUser.username || !newUser.position) {

@@ -1,8 +1,7 @@
-
 export const generateId = (prefix: string = ''): string => {
-  return `${prefix}${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+  return `${prefix}${Math.random().toString(36).substring(2, 11)}`;
 };
 
 export const generateSyncKey = (): string => {
-  return `GMYT-${Math.random().toString(36).substring(2, 6).toUpperCase()}-${Math.random().toString(36).substring(2, 6).toUpperCase()}`;
+  return `sync-${Math.random().toString(36).substring(2, 15)}-${Date.now()}`;
 };

@@ -59,13 +59,13 @@ const App: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    const saved = localStorage.getItem('gmyt_session');
-    if (saved) {
-      setCurrentUser(JSON.parse(saved));
-      setShowLanding(false);
-    }
-    
     const initData = async () => {
+      const saved = localStorage.getItem('gmyt_session');
+      if (saved) {
+        setCurrentUser(JSON.parse(saved));
+        setShowLanding(false);
+      }
+      
       // Check for sync key and pull latest data on start
       const key = await storageService.getSyncKey();
       if (key) {

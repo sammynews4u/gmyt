@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { Target, TrendingUp, Users, Award } from 'lucide-react';
+import { Award } from 'lucide-react';
 import { KPI } from '../types';
 
 const PERFORMANCE_METRICS: KPI[] = [

@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { MessageSquareWarning, Send, User, Clock, CheckCircle, Loader2 } from 'lucide-react';
+import { MessageSquareWarning, Send, User, CheckCircle, Loader2 } from 'lucide-react';
 import { Complaint, UserRole } from '../types';
 import { storageService } from '../services/storageService';
 
@@ -21,7 +21,10 @@ const CommunicationCenter: React.FC<CommProps> = ({ role }) => {
   };
 
   useEffect(() => {
-    loadComplaints();
+    const init = async () => {
+      await loadComplaints();
+    };
+    init();
 
     const handleSyncComplete = () => {
       loadComplaints();

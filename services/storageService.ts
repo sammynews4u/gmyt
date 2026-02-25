@@ -1,5 +1,5 @@
 
-import { Task, InventoryItem, Expense, Paycheck, OnboardingRecord, Complaint, KPI, MeetingMinutes, UserAccount, AttendanceRecord, TaskTemplate, PasswordChangeRequest, ChatMessage } from '../types';
+import { Task, InventoryItem, Expense, Paycheck, OnboardingRecord, Complaint, MeetingMinutes, UserAccount, AttendanceRecord, TaskTemplate, PasswordChangeRequest, ChatMessage } from '../types';
 import { dbEngine, STORES } from './db';
 
 const networkDelay = (ms: number = 300) => new Promise(resolve => setTimeout(resolve, ms));

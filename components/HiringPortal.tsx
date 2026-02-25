@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { Users, Search, UserPlus, FileText, Calendar, CheckCircle2, XCircle } from 'lucide-react';
+import { UserPlus, XCircle } from 'lucide-react';
 import { Candidate, UserRole } from '../types';
 
 interface HiringProps {
@@ -13,7 +13,7 @@ const MOCK_CANDIDATES: Candidate[] = [
   { id: '2', name: 'Sarah Ahmed', position: 'Admin Assistant', status: 'Applied', interviewNotes: '' },
 ];
 
-const HiringPortal: React.FC<HiringProps> = ({ role, onStartInterview }) => {
+const HiringPortal: React.FC<HiringProps> = ({ onStartInterview }) => {
   const [candidates] = useState(MOCK_CANDIDATES);
 
   return (

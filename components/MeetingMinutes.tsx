@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { Calendar, Users, ListTodo, MapPin, Target, Video, Loader2, Save, Plus } from 'lucide-react';
+import { Calendar, Video, Loader2, Save, Plus } from 'lucide-react';
 import { MeetingMinutes as IMeetingMinutes } from '../types';
 import { storageService } from '../services/storageService';
 import { generateId } from '../utils/id';
@@ -29,7 +29,10 @@ const MeetingMinutes: React.FC<MeetingMinutesProps> = ({ onStartMeeting }) => {
   };
 
   useEffect(() => {
-    loadMeetings();
+    const init = async () => {
+      await loadMeetings();
+    };
+    init();
   }, []);
 
   const handleSaveMeeting = async () => {

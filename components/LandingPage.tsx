@@ -1,5 +1,5 @@
 import React from 'react';
-import { ArrowRight, ShieldCheck, Zap, BarChart3, Target, ClipboardList } from 'lucide-react';
+import { ArrowRight, ShieldCheck, Zap, BarChart3, Target } from 'lucide-react';
 
 interface LandingPageProps {
   onStart: () => void;

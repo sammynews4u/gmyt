@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
 import { 
   BookOpen, GraduationCap, Target, Zap, ShieldCheck, 
-  ChevronRight, ArrowRight, Info, CheckCircle, 
-  Layout, ClipboardList, Banknote, Clock, MessageSquare,
-  Crown, Briefcase, Calculator, Users, Sparkles, Lightbulb,
-  FileText, ShieldAlert, Activity, BarChart, Rocket
+  ArrowRight, CheckCircle, 
+  Layout, Clock,
+  Crown, Briefcase, Calculator, Users, Lightbulb,
+  FileText, ShieldAlert, Activity, Rocket
 } from 'lucide-react';
 import { UserRole } from '../types';
 

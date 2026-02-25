@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area } from 'recharts';
-import { Target, AlertTriangle, CheckCircle2, Clock, Banknote, Users, Briefcase, Quote, Sparkles, Loader2, ListChecks } from 'lucide-react';
+import { Target, AlertTriangle, Banknote, Users, Quote, Sparkles, Loader2, ListChecks } from 'lucide-react';
 import { UserRole } from '../types';
 import { getDailyMotivation } from '../services/geminiService';
 import { storageService } from '../services/storageService';
@@ -53,8 +53,11 @@ const Dashboard: React.FC<DashboardProps> = ({ role }) => {
   };
 
   useEffect(() => {
-    fetchMotivation();
-    fetchUserSop();
+    const init = async () => {
+      await fetchMotivation();
+      await fetchUserSop();
+    };
+    init();
   }, []);
 
   return (

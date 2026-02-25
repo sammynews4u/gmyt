@@ -1,8 +1,8 @@
 
 import React, { useState, useEffect } from 'react';
-import { Clock, LogIn, LogOut, Calendar, Users, CheckCircle2, AlertCircle, Loader2, Filter } from 'lucide-react';
+import { Clock, LogIn, LogOut, CheckCircle2, Loader2, Filter } from 'lucide-react';
 import { storageService } from '../services/storageService';
-import { AttendanceRecord, UserAccount, UserRole } from '../types';
+import { AttendanceRecord, UserAccount } from '../types';
 
 interface AttendanceProps {
   user: UserAccount;
@@ -22,7 +22,10 @@ const AttendanceRegister: React.FC<AttendanceProps> = ({ user }) => {
   };
 
   useEffect(() => {
-    loadAttendance();
+    const init = async () => {
+      await loadAttendance();
+    };
+    init();
 
     const handleSyncComplete = () => {
       loadAttendance();

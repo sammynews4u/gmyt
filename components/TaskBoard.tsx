@@ -69,7 +69,10 @@ export default function TaskBoard({ user, staff }: TaskBoardProps) {
   };
 
   useEffect(() => {
-    loadTasks();
+    const init = async () => {
+      await loadTasks();
+    };
+    init();
 
     // Listen for sync completion to refresh task list
     const handleSyncComplete = () => {
@@ -230,7 +233,7 @@ export default function TaskBoard({ user, staff }: TaskBoardProps) {
         } else {
           alert("Invalid file format. Please upload a JSON array of tasks.");
         }
-      } catch (err) {
+      } catch {
         alert("Failed to parse file. Ensure it is a valid JSON document.");
       }
     };

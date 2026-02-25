@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { Banknote, CreditCard, Download, Search, CheckCircle, FileText, Printer, Loader2, Sparkles, AlertCircle } from 'lucide-react';
+import { CheckCircle, Loader2, Sparkles, AlertCircle } from 'lucide-react';
 import { Paycheck, UserRole } from '../types';
 import { storageService } from '../services/storageService';
 
@@ -22,8 +22,18 @@ const PayrollSystem: React.FC<PayrollProps> = ({ role }) => {
   const [isLoading, setIsLoading] = useState(true);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
 
+  const loadPayroll = async () => {
+    setIsLoading(true);
+    const data = await storageService.getPayroll();
+    setPayrolls(data);
+    setIsLoading(false);
+  };
+
   useEffect(() => {
-    loadPayroll();
+    const init = async () => {
+      await loadPayroll();
+    };
+    init();
 
     const handleSyncComplete = () => {
       loadPayroll();
@@ -31,13 +41,6 @@ const PayrollSystem: React.FC<PayrollProps> = ({ role }) => {
     window.addEventListener('gmyt-sync-complete', handleSyncComplete);
     return () => window.removeEventListener('gmyt-sync-complete', handleSyncComplete);
   }, []);
-
-  const loadPayroll = async () => {
-    setIsLoading(true);
-    const data = await storageService.getPayroll();
-    setPayrolls(data);
-    setIsLoading(false);
-  };
 
   const handleInitiatePayroll = async () => {
     setIsInitiating(true);

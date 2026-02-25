@@ -1,10 +1,10 @@
 
 import React, { useState, useEffect } from 'react';
 import { 
-  FolderLock, Search, UserPlus, FileText, CheckCircle2, 
-  XCircle, Loader2, Trash2, ShieldCheck,
-  AlertCircle, FileCheck, Info, ChevronDown, ChevronUp,
-  CreditCard, UserCheck, Mail, Briefcase, Stamp, Settings2,
+  FolderLock, Search, UserPlus, FileText, 
+  Loader2, ShieldCheck,
+  ChevronDown, ChevronUp,
+  Briefcase,
   CheckSquare, Square, Rocket
 } from 'lucide-react';
 import { OnboardingRecord, UserRole, UserAccount, Task } from '../types';
@@ -78,7 +78,10 @@ const OnboardingPortal: React.FC<OnboardingProps> = ({ role, staff }) => {
   };
 
   useEffect(() => {
-    loadOnboardingDocs();
+    const init = async () => {
+      await loadOnboardingDocs();
+    };
+    init();
   }, []);
 
   const handleAutoDeployTasks = async (record: OnboardingRecord) => {
@@ -163,27 +166,6 @@ const OnboardingPortal: React.FC<OnboardingProps> = ({ role, staff }) => {
     if (completedCount === 0) updatedRecord.status = 'Incomplete';
     else if (completedCount === docValues.length) updatedRecord.status = 'Verified';
     else updatedRecord.status = 'Pending Review';
-
-    await storageService.saveOnboardingDoc(updatedRecord);
-    await loadOnboardingDocs();
-  };
-
-  const handleBulkVerify = async (id: string) => {
-    if (!isManagement) return;
-    const record = records.find(r => r.id === id);
-    if (!record) return;
-
-    const allVerifiedDocs = { ...record.docs };
-    Object.keys(allVerifiedDocs).forEach(key => {
-      allVerifiedDocs[key as keyof OnboardingRecord['docs']] = true;
-    });
-
-    const updatedRecord: OnboardingRecord = {
-      ...record,
-      docs: allVerifiedDocs,
-      status: 'Verified',
-      lastUpdated: new Date().toLocaleDateString()
-    };
 
     await storageService.saveOnboardingDoc(updatedRecord);
     await loadOnboardingDocs();

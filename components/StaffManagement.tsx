@@ -1,14 +1,14 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { 
-  Users, Search, UserPlus, Mail, Phone, Briefcase, 
-  Banknote, TrendingUp, UserMinus, ShieldCheck, 
-  Loader2, MoreVertical, X, Save, ClipboardList,
-  AlertCircle, ChevronRight, Contact, MapPin, CalendarDays, ShieldAlert,
+  Search, Briefcase, 
+  Banknote, ShieldCheck, 
+  Loader2, X, Save, ClipboardList,
+  Contact, 
   Settings2, FileText, Camera, Lock, Key, ListChecks
 } from 'lucide-react';
 import { storageService } from '../services/storageService';
-import { UserAccount, UserRole, Paycheck } from '../types';
+import { UserAccount, UserRole } from '../types';
 
 const DEPARTMENTS = [
   'EXECUTIVE',
@@ -39,8 +39,18 @@ const StaffManagement: React.FC<StaffManagementProps> = ({ role }) => {
 
   const isCEO = role === 'CEO';
 
+  const loadUsers = async () => {
+    setIsLoading(true);
+    const data = await storageService.getUsers();
+    setUsers(data);
+    setIsLoading(false);
+  };
+
   useEffect(() => {
-    loadUsers();
+    const init = async () => {
+      await loadUsers();
+    };
+    init();
 
     const handleSyncComplete = () => {
       loadUsers();
@@ -48,13 +58,6 @@ const StaffManagement: React.FC<StaffManagementProps> = ({ role }) => {
     window.addEventListener('gmyt-sync-complete', handleSyncComplete);
     return () => window.removeEventListener('gmyt-sync-complete', handleSyncComplete);
   }, []);
-
-  const loadUsers = async () => {
-    setIsLoading(true);
-    const data = await storageService.getUsers();
-    setUsers(data);
-    setIsLoading(false);
-  };
 
   const handleUpdateStaff = async (e: React.FormEvent) => {
     e.preventDefault();

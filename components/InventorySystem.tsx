@@ -3,10 +3,10 @@ import React, { useState, useEffect } from 'react';
 import { 
   Package, ArrowUpRight, ArrowDownLeft, RefreshCcw, Search, 
   AlertCircle, Loader2, Plus, Trash2, Edit3, X, Save, 
-  ShieldCheck, UserCircle, History, Box, Tag, Layers, 
-  Activity, AlertTriangle, ShieldAlert, Cpu
+  ShieldCheck, UserCircle, History, Box, Layers, 
+  AlertTriangle, Cpu
 } from 'lucide-react';
-import { InventoryItem, UserAccount, UserRole } from '../types';
+import { InventoryItem, UserAccount } from '../types';
 import { storageService } from '../services/storageService';
 import { generateId } from '../utils/id';
 
@@ -50,7 +50,10 @@ export default function InventorySystem({ user }: InventorySystemProps) {
   };
 
   useEffect(() => {
-    loadInventory();
+    const init = async () => {
+      await loadInventory();
+    };
+    init();
 
     const handleSyncComplete = () => {
       loadInventory();

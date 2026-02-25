@@ -35,7 +35,10 @@ export default function ExpenseSheet({ user }: ExpenseSheetProps) {
   };
 
   useEffect(() => {
-    loadExpenses();
+    const init = async () => {
+      await loadExpenses();
+    };
+    init();
 
     const handleSyncComplete = () => {
       loadExpenses();
