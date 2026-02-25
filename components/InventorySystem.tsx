@@ -8,6 +8,7 @@ import {
 } from 'lucide-react';
 import { InventoryItem, UserAccount, UserRole } from '../types';
 import { storageService } from '../services/storageService';
+import { generateId } from '../utils/id';
 
 interface InventorySystemProps {
   user: UserAccount;
@@ -36,16 +37,6 @@ export default function InventorySystem({ user }: InventorySystemProps) {
     out: 0
   });
 
-  useEffect(() => {
-    loadInventory();
-
-    const handleSyncComplete = () => {
-      loadInventory();
-    };
-    window.addEventListener('gmyt-sync-complete', handleSyncComplete);
-    return () => window.removeEventListener('gmyt-sync-complete', handleSyncComplete);
-  }, []);
-
   const loadInventory = async () => {
     setIsLoading(true);
     const data = await storageService.getInventory();
@@ -58,6 +49,16 @@ export default function InventorySystem({ user }: InventorySystemProps) {
     setIsLoading(false);
   };
 
+  useEffect(() => {
+    loadInventory();
+
+    const handleSyncComplete = () => {
+      loadInventory();
+    };
+    window.addEventListener('gmyt-sync-complete', handleSyncComplete);
+    return () => window.removeEventListener('gmyt-sync-complete', handleSyncComplete);
+  }, []);
+
   const handleSaveItem = async () => {
     if (!newItem.product || !newItem.responsibleParty) {
       alert("Product Name and Responsible Party are required.");
@@ -66,7 +67,7 @@ export default function InventorySystem({ user }: InventorySystemProps) {
 
     const itemToSave: InventoryItem = {
       ...newItem,
-      id: editingItem ? editingItem.id : `inv-${Date.now()}`,
+      id: editingItem ? editingItem.id : generateId('inv-'),
       date: new Date().toLocaleDateString(),
       quantity: newItem.balance || 0,
       in: editingItem ? editingItem.in : 0,

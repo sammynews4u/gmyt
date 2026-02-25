@@ -1,19 +1,21 @@
 
 import React, { useState, useEffect } from 'react';
-import { 
-  Plus, Search, CheckCircle, Trash2, X, Play, 
-  CheckSquare, Loader2, Layers,
+import { Plus, Search, CheckCircle, Trash2, X, 
+  CheckSquare, Loader2,
   ChevronDown, ChevronUp, Activity, ShieldAlert,
-  Target, Bookmark, Clock, AlertTriangle, ShieldCheck,
-  ClipboardList, Settings2, Sparkles, Wand2, UserCircle,
-  Zap, Cpu, ListChecks, FileInput, Send, Printer, MessageSquare,
-  FileText, AlertCircle, Eye, ThumbsUp, RotateCcw,
-  Target as TargetIcon, ArrowRight, Info, BarChart, Edit,
-  Calendar, Check, User
+  Target, Clock, AlertTriangle,
+  ClipboardList, Wand2,
+  Zap, BarChart, Send, Printer,
+  FileText, AlertCircle, ThumbsUp, RotateCcw,
+  ArrowRight, Edit,
+  Check, User, Upload, Database,
+  Eye, MessageSquare, Target as TargetIcon
 } from 'lucide-react';
 import { Task, UserAccount, TaskStatus } from '../types';
 import { storageService } from '../services/storageService';
 import { generateTaskSchema } from '../services/geminiService';
+import { taskSeeder } from '../services/taskSeeder';
+import { generateId } from '../utils/id';
 
 interface TaskBoardProps {
   user: UserAccount;
@@ -59,6 +61,13 @@ export default function TaskBoard({ user, staff }: TaskBoardProps) {
   const [activeTab, setActiveTab] = useState<'task' | 'prrr' | 'smart' | 'skrc' | 'report'>('task');
   const [expandedTab, setExpandedTab] = useState<'details' | 'report'>('details');
 
+  const loadTasks = async () => {
+    setIsLoading(true);
+    const data = await storageService.getTasks();
+    setTasks(data);
+    setIsLoading(false);
+  };
+
   useEffect(() => {
     loadTasks();
 
@@ -69,13 +78,6 @@ export default function TaskBoard({ user, staff }: TaskBoardProps) {
     window.addEventListener('gmyt-sync-complete', handleSyncComplete);
     return () => window.removeEventListener('gmyt-sync-complete', handleSyncComplete);
   }, []);
-
-  const loadTasks = async () => {
-    setIsLoading(true);
-    const data = await storageService.getTasks();
-    setTasks(data);
-    setIsLoading(false);
-  };
 
   const handleStaffSelect = (staffId: string) => {
     const member = staff.find(s => s.id === staffId);
@@ -113,7 +115,7 @@ export default function TaskBoard({ user, staff }: TaskBoardProps) {
     const taskToSave: Task = {
       ...initialTaskState,
       ...formTask,
-      id: editingTask ? editingTask.id : Date.now().toString(),
+      id: editingTask ? editingTask.id : generateId('task-'),
       sn: editingTask ? editingTask.sn : tasks.length + 1,
       dateLogged: editingTask ? editingTask.dateLogged : new Date().toLocaleDateString(),
       skrc: { ...initialTaskState.skrc!, ...formTask.skrc },
@@ -193,6 +195,48 @@ export default function TaskBoard({ user, staff }: TaskBoardProps) {
     await loadTasks();
   };
 
+  const handleSeedData = async () => {
+    if (confirm("This will populate the sheet with the strategic tasks from the organization document. Continue?")) {
+      await taskSeeder.seedTasks();
+      await loadTasks();
+      alert("Strategic tasks have been successfully synchronized.");
+    }
+  };
+
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = async (event) => {
+      try {
+        const content = event.target?.result as string;
+        const data = JSON.parse(content);
+        
+        if (Array.isArray(data)) {
+          for (const item of data) {
+            const task: Task = {
+              ...initialTaskState,
+              ...item,
+              id: generateId('import-'),
+              sn: tasks.length + 1,
+              dateLogged: new Date().toLocaleDateString(),
+              addedBy: user.role
+            } as Task;
+            await storageService.saveTask(task);
+          }
+          await loadTasks();
+          alert(`${data.length} tasks imported successfully.`);
+        } else {
+          alert("Invalid file format. Please upload a JSON array of tasks.");
+        }
+      } catch (err) {
+        alert("Failed to parse file. Ensure it is a valid JSON document.");
+      }
+    };
+    reader.readAsText(file);
+  };
+
   const filteredTasks = tasks.filter(t => 
     t.role.toLowerCase().includes(search.toLowerCase()) || 
     t.responsibleParty.toLowerCase().includes(search.toLowerCase()) ||
@@ -238,6 +282,32 @@ export default function TaskBoard({ user, staff }: TaskBoardProps) {
            </div>
         </div>
         <div className="flex flex-col sm:flex-row gap-3 w-full xl:w-auto">
+          {isManagement && (
+            <>
+              <button 
+                onClick={handleSeedData}
+                className="p-3.5 bg-amber-500/10 border border-amber-500/20 text-amber-500 rounded-2xl hover:bg-amber-500 hover:text-black transition-all shadow-md flex items-center gap-2 text-[10px] font-black uppercase tracking-widest"
+                title="Seed Strategic Data"
+              >
+                <Database size={18} /> Seed Data
+              </button>
+              <div className="relative">
+                <input 
+                  type="file" 
+                  id="task-upload" 
+                  className="hidden" 
+                  accept=".json"
+                  onChange={handleFileUpload}
+                />
+                <label 
+                  htmlFor="task-upload"
+                  className="p-3.5 bg-zinc-900 border border-zinc-800 text-zinc-400 rounded-2xl hover:text-white transition-all shadow-md flex items-center gap-2 text-[10px] font-black uppercase tracking-widest cursor-pointer"
+                >
+                  <Upload size={18} /> Import JSON
+                </label>
+              </div>
+            </>
+          )}
           <div className="relative flex-1 sm:w-80 group">
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-600 group-focus-within:text-amber-500 transition-colors" size={18} />
             <input 

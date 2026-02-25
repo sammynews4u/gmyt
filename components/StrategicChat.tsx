@@ -9,6 +9,7 @@ import {
 } from 'lucide-react';
 import { ChatMessage, UserAccount, UserRole } from '../types';
 import { storageService } from '../services/storageService';
+import { generateId } from '../utils/id';
 
 interface StrategicChatProps {
   user: UserAccount;
@@ -90,7 +91,7 @@ export default function StrategicChat({ user, staff }: StrategicChatProps) {
     if (!inputText.trim()) return;
 
     const newMessage: ChatMessage = {
-      id: `msg-${Date.now()}`,
+      id: generateId('msg-'),
       senderId: user.id,
       senderName: user.name,
       senderRole: user.role,

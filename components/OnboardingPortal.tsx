@@ -9,6 +9,7 @@ import {
 } from 'lucide-react';
 import { OnboardingRecord, UserRole, UserAccount, Task } from '../types';
 import { storageService } from '../services/storageService';
+import { generateId } from '../utils/id';
 
 interface OnboardingProps {
   role: UserRole;
@@ -69,16 +70,16 @@ const OnboardingPortal: React.FC<OnboardingProps> = ({ role, staff }) => {
   const isCEO = role === 'CEO';
   const isManagement = isCEO || role === 'Project Manager';
 
-  useEffect(() => {
-    loadOnboardingDocs();
-  }, []);
-
   const loadOnboardingDocs = async () => {
     setIsLoading(true);
     const data = await storageService.getOnboardingDocs();
     setRecords(data);
     setIsLoading(false);
   };
+
+  useEffect(() => {
+    loadOnboardingDocs();
+  }, []);
 
   const handleAutoDeployTasks = async (record: OnboardingRecord) => {
     setIsDeploying(true);
@@ -95,7 +96,7 @@ const OnboardingPortal: React.FC<OnboardingProps> = ({ role, staff }) => {
     for (const base of onboardingTasks) {
       // Fix: Add missing 'tasksForToday' property to comply with the Task interface
       const task: Task = {
-        id: `auto-${Date.now()}-${Math.random()}`,
+        id: generateId('auto-'),
         sn: 0, // Storage service will need to handle SN properly in real app
         dateLogged: new Date().toLocaleDateString(),
         role: base.role!,

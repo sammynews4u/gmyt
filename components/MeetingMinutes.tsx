@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { Calendar, Users, ListTodo, MapPin, Target, Video, Loader2, Save, Plus } from 'lucide-react';
 import { MeetingMinutes as IMeetingMinutes } from '../types';
 import { storageService } from '../services/storageService';
+import { generateId } from '../utils/id';
 
 interface MeetingMinutesProps {
   onStartMeeting: () => void;
@@ -20,10 +21,6 @@ const MeetingMinutes: React.FC<MeetingMinutesProps> = ({ onStartMeeting }) => {
     attendance: []
   });
 
-  useEffect(() => {
-    loadMeetings();
-  }, []);
-
   const loadMeetings = async () => {
     setIsLoading(true);
     const data = await storageService.getMeetings();
@@ -31,11 +28,15 @@ const MeetingMinutes: React.FC<MeetingMinutesProps> = ({ onStartMeeting }) => {
     setIsLoading(false);
   };
 
+  useEffect(() => {
+    loadMeetings();
+  }, []);
+
   const handleSaveMeeting = async () => {
     if (!newMeeting.agenda) return;
     const meeting: IMeetingMinutes = {
       ...newMeeting as IMeetingMinutes,
-      id: Date.now().toString(),
+      id: generateId('meet-'),
     };
     await storageService.saveMeeting(meeting);
     await loadMeetings();

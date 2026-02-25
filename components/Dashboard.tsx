@@ -32,11 +32,6 @@ const Dashboard: React.FC<DashboardProps> = ({ role }) => {
   const [isMotivationLoading, setIsMotivationLoading] = useState(true);
   const [dailySop, setDailySop] = useState<string | null>(null);
 
-  useEffect(() => {
-    fetchMotivation();
-    fetchUserSop();
-  }, []);
-
   const fetchMotivation = async () => {
     setIsMotivationLoading(true);
     const quote = await getDailyMotivation();
@@ -56,6 +51,11 @@ const Dashboard: React.FC<DashboardProps> = ({ role }) => {
       }
     }
   };
+
+  useEffect(() => {
+    fetchMotivation();
+    fetchUserSop();
+  }, []);
 
   return (
     <div className="space-y-8 animate-in fade-in duration-500">

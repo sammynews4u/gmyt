@@ -9,6 +9,7 @@ import {
 import { UserAccount, UserRole, PasswordChangeRequest } from '../types';
 import { storageService } from '../services/storageService';
 import { STORES } from '../services/db';
+import { generateId, generateSyncKey } from '../utils/id';
 
 const DEPARTMENTS = [
   'EXECUTIVE',
@@ -43,33 +44,6 @@ const CompanySettings: React.FC<SettingsProps> = ({ role }) => {
   const [isSyncing, setIsSyncing] = useState(false);
   const [lastSync, setLastSync] = useState<string>('');
 
-  const [newUser, setNewUser] = useState({
-    name: '',
-    role: 'Staff' as UserRole,
-    position: '',
-    department: 'OPERATIONS',
-    username: '',
-    password: 'password123',
-    jobDescription: ''
-  });
-
-  useEffect(() => {
-    const saved = localStorage.getItem('gmyt_session');
-    if (saved) setCurrentUser(JSON.parse(saved));
-    loadInitialData();
-  }, []);
-
-  const loadInitialData = async () => {
-    setIsLoading(true);
-    await Promise.all([
-      loadUsers(),
-      loadPwRequests(),
-      loadSyncStatus()
-    ]);
-    await inspectDatabase();
-    setIsLoading(false);
-  };
-
   const loadSyncStatus = async () => {
     const key = await storageService.getSyncKey();
     if (key) setSyncKey(key);
@@ -93,6 +67,33 @@ const CompanySettings: React.FC<SettingsProps> = ({ role }) => {
     setPwRequests(data);
   };
 
+  const loadInitialData = async () => {
+    setIsLoading(true);
+    await Promise.all([
+      loadUsers(),
+      loadPwRequests(),
+      loadSyncStatus()
+    ]);
+    await inspectDatabase();
+    setIsLoading(false);
+  };
+
+  const [newUser, setNewUser] = useState({
+    name: '',
+    role: 'Staff' as UserRole,
+    position: '',
+    department: 'OPERATIONS',
+    username: '',
+    password: 'password123',
+    jobDescription: ''
+  });
+
+  useEffect(() => {
+    const saved = localStorage.getItem('gmyt_session');
+    if (saved) setCurrentUser(JSON.parse(saved));
+    loadInitialData();
+  }, []);
+
   const handleCreateUser = async () => {
     if (!newUser.name || !newUser.username || !newUser.position) {
       alert("Name, Position, and Username are mandatory.");
@@ -101,7 +102,7 @@ const CompanySettings: React.FC<SettingsProps> = ({ role }) => {
     setIsSaving(true);
     const account: UserAccount = {
       ...newUser,
-      id: `u-${Date.now()}`
+      id: generateId('u-')
     } as UserAccount;
     await storageService.saveUser(account);
     await loadUsers();
@@ -136,7 +137,7 @@ const CompanySettings: React.FC<SettingsProps> = ({ role }) => {
   };
 
   const handleGenerateSyncKey = () => {
-    const newKey = `GMYT-${Math.random().toString(36).substring(2, 6).toUpperCase()}-${Math.random().toString(36).substring(2, 6).toUpperCase()}`;
+    const newKey = generateSyncKey();
     setSyncKey(newKey);
   };
 

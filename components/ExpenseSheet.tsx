@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { Banknote, FileText, Send, CheckCircle, XCircle, Loader2, Plus, ShieldCheck, PieChart, Activity, Wallet } from 'lucide-react';
 import { Expense, UserAccount } from '../types';
 import { storageService } from '../services/storageService';
+import { generateId } from '../utils/id';
 
 interface ExpenseSheetProps {
   user: UserAccount;
@@ -26,6 +27,13 @@ export default function ExpenseSheet({ user }: ExpenseSheetProps) {
     status: 'Pending'
   });
 
+  const loadExpenses = async () => {
+    setIsLoading(true);
+    const data = await storageService.getExpenses();
+    setExpenses(data);
+    setIsLoading(false);
+  };
+
   useEffect(() => {
     loadExpenses();
 
@@ -36,13 +44,6 @@ export default function ExpenseSheet({ user }: ExpenseSheetProps) {
     return () => window.removeEventListener('gmyt-sync-complete', handleSyncComplete);
   }, []);
 
-  const loadExpenses = async () => {
-    setIsLoading(true);
-    const data = await storageService.getExpenses();
-    setExpenses(data);
-    setIsLoading(false);
-  };
-
   const handleTenderBudget = async () => {
     if (!newExpense.accountName || !newExpense.amount) {
       alert("Vendor and Amount are required.");
@@ -51,7 +52,7 @@ export default function ExpenseSheet({ user }: ExpenseSheetProps) {
     setIsSubmitting(true);
     const expenseToSave: Expense = {
       ...newExpense,
-      id: `exp-${Date.now()}`,
+      id: generateId('exp-'),
       invoiceDate: new Date().toLocaleDateString(),
       status: 'Pending'
     } as Expense;

@@ -14,6 +14,13 @@ const AttendanceRegister: React.FC<AttendanceProps> = ({ user }) => {
   const [isSyncing, setIsSyncing] = useState(false);
   const isManagement = user.role === 'CEO' || user.role === 'Project Manager';
 
+  const loadAttendance = async () => {
+    setIsLoading(true);
+    const data = await storageService.getAttendance();
+    setRecords(data);
+    setIsLoading(false);
+  };
+
   useEffect(() => {
     loadAttendance();
 
@@ -23,13 +30,6 @@ const AttendanceRegister: React.FC<AttendanceProps> = ({ user }) => {
     window.addEventListener('gmyt-sync-complete', handleSyncComplete);
     return () => window.removeEventListener('gmyt-sync-complete', handleSyncComplete);
   }, []);
-
-  const loadAttendance = async () => {
-    setIsLoading(true);
-    const data = await storageService.getAttendance();
-    setRecords(data);
-    setIsLoading(false);
-  };
 
   const handleClockIn = async () => {
     setIsSyncing(true);

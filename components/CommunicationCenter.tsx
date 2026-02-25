@@ -13,6 +13,13 @@ const CommunicationCenter: React.FC<CommProps> = ({ role }) => {
   const [newComplaint, setNewComplaint] = useState('');
   const [isLoading, setIsLoading] = useState(true);
 
+  const loadComplaints = async () => {
+    setIsLoading(true);
+    const data = await storageService.getComplaints();
+    setComplaints(data);
+    setIsLoading(false);
+  };
+
   useEffect(() => {
     loadComplaints();
 
@@ -22,13 +29,6 @@ const CommunicationCenter: React.FC<CommProps> = ({ role }) => {
     window.addEventListener('gmyt-sync-complete', handleSyncComplete);
     return () => window.removeEventListener('gmyt-sync-complete', handleSyncComplete);
   }, []);
-
-  const loadComplaints = async () => {
-    setIsLoading(true);
-    const data = await storageService.getComplaints();
-    setComplaints(data);
-    setIsLoading(false);
-  };
 
   const handleSubmit = async () => {
     if (!newComplaint.trim()) return;

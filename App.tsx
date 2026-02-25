@@ -2,10 +2,8 @@
 import React, { useState, useEffect } from 'react';
 import { 
   LayoutDashboard, ClipboardList, Package, Banknote, Target, 
-  Calendar, Menu, X, ChevronRight, UserCircle, Briefcase, 
-  Settings, MessageSquareWarning, Users, Clock, LogOut,
-  Contact, FolderLock, Database, Cloud, Watch, ShieldCheck, RefreshCw,
-  UserPlus, MessageSquare, GraduationCap, BookOpen, Scissors
+  Calendar, Menu, X, Settings, MessageSquareWarning, Clock, LogOut,
+  Contact, FolderLock, GraduationCap, Scissors, MessageSquare, UserPlus
 } from 'lucide-react';
 import Dashboard from './components/Dashboard';
 import TaskBoard from './components/TaskBoard';
@@ -25,7 +23,7 @@ import Login from './components/Login';
 import StaffManagement from './components/StaffManagement';
 import HiringPortal from './components/HiringPortal';
 import StrategicChat from './components/StrategicChat';
-import { UserRole, UserAccount } from './types';
+import { UserAccount } from './types';
 import { storageService } from './services/storageService';
 
 const App: React.FC = () => {
@@ -38,6 +36,11 @@ const App: React.FC = () => {
   const [systemStaff, setSystemStaff] = useState<UserAccount[]>([]);
   const [time, setTime] = useState(new Date());
   
+  const loadSystemStaff = async () => {
+    const users = await storageService.getUsers();
+    setSystemStaff(users);
+  };
+
   // Auto-collapse sidebar on mobile
   useEffect(() => {
     const handleResize = () => {
@@ -81,11 +84,6 @@ const App: React.FC = () => {
     
     return () => window.removeEventListener('gmyt-sync-complete', handleSyncComplete);
   }, []);
-
-  const loadSystemStaff = async () => {
-    const users = await storageService.getUsers();
-    setSystemStaff(users);
-  };
 
   const handleLogin = (user: UserAccount) => {
     setCurrentUser(user);
