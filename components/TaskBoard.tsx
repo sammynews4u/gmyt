@@ -9,7 +9,8 @@ import { Plus, Search, CheckCircle, Trash2, X,
   FileText, AlertCircle, ThumbsUp, RotateCcw,
   ArrowRight, Edit,
   Check, User, Upload, Database,
-  Eye, MessageSquare, Target as TargetIcon
+  Eye, MessageSquare, Target as TargetIcon,
+  Play
 } from 'lucide-react';
 import { Task, UserAccount, TaskStatus } from '../types';
 import { storageService } from '../services/storageService';
@@ -147,6 +148,26 @@ export default function TaskBoard({ user, staff }: TaskBoardProps) {
   };
 
   // --- REPORTING WORKFLOW ---
+
+  const handleStartTask = async (task: Task) => {
+    const updatedTask: Task = {
+      ...task,
+      skrc: {
+        ...task.skrc,
+        status: 'Ongoing',
+        isStarted: true
+      }
+    };
+    await storageService.saveTask(updatedTask);
+    await loadTasks();
+  };
+
+  const handleMarkDone = (task: Task) => {
+    setReportingTask(task);
+    setReportText(task.skrc.report || '');
+    setReportStatus('Completed');
+    setIsReportModalOpen(true);
+  };
 
   const handleOpenReport = (task: Task) => {
     setReportingTask(task);
@@ -455,7 +476,7 @@ export default function TaskBoard({ user, staff }: TaskBoardProps) {
                                           onClick={(e) => { e.stopPropagation(); handleOpenReport(task); }}
                                           className="px-8 py-4 gold-gradient text-black font-black rounded-2xl uppercase tracking-widest text-xs hover:scale-105 transition-transform flex items-center gap-3"
                                        >
-                                          <FileText size={16} /> Submit Daily Report
+                                          <FileText size={16} /> Update Report
                                        </button>
                                     )}
 
