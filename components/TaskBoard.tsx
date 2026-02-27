@@ -470,14 +470,34 @@ export default function TaskBoard({ user, staff }: TaskBoardProps) {
                                          Report
                                        </button>
                                     </div>
-                                    {/* STAFF ACTIONS: Submit Report */}
-                                    {isAssignedToMe && task.skrc.status !== 'Completed' && (
-                                       <button 
-                                          onClick={(e) => { e.stopPropagation(); handleOpenReport(task); }}
-                                          className="px-8 py-4 gold-gradient text-black font-black rounded-2xl uppercase tracking-widest text-xs hover:scale-105 transition-transform flex items-center gap-3"
-                                       >
-                                          <FileText size={16} /> Update Report
-                                       </button>
+                                    {/* STAFF ACTIONS: Start/Mark Done/Update Report */}
+                                    {isAssignedToMe && (
+                                       <div className="flex gap-4">
+                                          {task.skrc.status === 'Pending' && (
+                                            <button 
+                                               onClick={(e) => { e.stopPropagation(); handleStartTask(task); }}
+                                               className="px-8 py-4 bg-blue-600 text-white font-black rounded-2xl uppercase tracking-widest text-xs hover:bg-blue-500 transition-all flex items-center gap-3"
+                                            >
+                                               <Play size={16} /> Start Task
+                                            </button>
+                                          )}
+                                          {task.skrc.status === 'Ongoing' && (
+                                            <button 
+                                               onClick={(e) => { e.stopPropagation(); handleMarkDone(task); }}
+                                               className="px-8 py-4 bg-emerald-600 text-white font-black rounded-2xl uppercase tracking-widest text-xs hover:bg-emerald-500 transition-all flex items-center gap-3"
+                                            >
+                                               <CheckCircle size={16} /> Mark Done
+                                            </button>
+                                          )}
+                                          {task.skrc.status !== 'Completed' && task.skrc.status !== 'Awaiting Approval' && (
+                                            <button 
+                                               onClick={(e) => { e.stopPropagation(); handleOpenReport(task); }}
+                                               className="px-8 py-4 bg-zinc-800 text-zinc-300 border border-zinc-700 font-black rounded-2xl uppercase tracking-widest text-xs hover:bg-zinc-700 transition-all flex items-center gap-3"
+                                            >
+                                               <FileText size={16} /> Update Report
+                                            </button>
+                                          )}
+                                       </div>
                                     )}
 
                                     {/* MANAGER ACTIONS: Verify/Reject */}
